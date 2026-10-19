@@ -726,12 +726,10 @@ static NSMutableDictionary<NSString *, TrustedWebRecord *> *trustedWebRecords() 
     
     if ([view isKindOfClass:[UIVisualEffectView class]]) {
         UIVisualEffectView *effectView = (UIVisualEffectView *)view;
-        if (@available(iOS 26.0, *)) {
-            if ([effectView.effect isKindOfClass:[UIGlassEffect class]]) {
-                UIGlassEffect *effect = (UIGlassEffect *)effectView.effect;
-                NSObject *glass = [effect valueForKey:@"glass"];
-                NSLog(@"glass %@", glass.debugDescription);
-            }
+        Class glassEffectClass = NSClassFromString(@"UIGlassEffect");
+        if (glassEffectClass && [effectView.effect isKindOfClass:glassEffectClass]) {
+            NSObject *glass = [effectView.effect valueForKey:@"glass"];
+            NSLog(@"glass %@", glass.debugDescription);
         }
     }
     
