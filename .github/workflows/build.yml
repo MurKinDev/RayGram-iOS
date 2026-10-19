@@ -53,6 +53,10 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
 
+          OUTPUT_PATH="$SOURCE_DIR/build/artifacts"
+          rm -rf "$OUTPUT_PATH"
+          mkdir -p "$OUTPUT_PATH"
+
           python3 build-system/Make/ImportCertificates.py --path build-system/fake-codesigning/certs
           python3 -u build-system/Make/Make.py \
             --bazelUserRoot="$BAZEL_USER_ROOT" \
@@ -60,18 +64,20 @@ jobs:
             build \
             --configurationPath="build-system/raygram_configuration.json" \
             --codesigningInformationPath=build-system/fake-codesigning \
+            --outputBuildArtifactsPath="$OUTPUT_PATH" \
             --configuration=release_arm64 \
             --buildNumber="$BUILD_NUMBER"
 
-          OUTPUT_PATH="build/artifacts"
-          rm -rf "$OUTPUT_PATH"
-          mkdir -p "$OUTPUT_PATH"
-          for f in bazel-out/applebin_ios-ios_arm*-opt-ST-*/bin/Telegram/Telegram.ipa; do
-            if [ -f "$f" ]; then
-              cp "$f" "$OUTPUT_PATH/Telegram.ipa"
-              cp "$f" "$OUTPUT_PATH/RayGram.ipa"
-            fi
-          done
+          if [ -f "$OUTPUT_PATH/Telegram.ipa" ]; then
+            cp "$OUTPUT_PATH/Telegram.ipa" "$OUTPUT_PATH/RayGram.ipa"
+          else
+            echo "Searching for built IPA..."
+            find bazel-bin bazel-out . -name "Telegram.ipa" -exec cp {} "$OUTPUT_PATH/Telegram.ipa" \;
+            [ -f "$OUTPUT_PATH/Telegram.ipa" ] && cp "$OUTPUT_PATH/Telegram.ipa" "$OUTPUT_PATH/RayGram.ipa"
+          fi
+
+          echo "Artifacts directory contents:"
+          ls -la "$OUTPUT_PATH"
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
