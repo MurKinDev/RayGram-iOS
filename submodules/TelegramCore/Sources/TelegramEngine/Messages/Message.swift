@@ -78,6 +78,9 @@ public final class EngineMessage: Equatable {
     public var attributes: [Attribute] {
         return self.impl.attributes
     }
+    public var isDeleted: Bool {
+        return self.impl.isDeleted
+    }
     public var media: [Media] {
         return self.impl.media
     }

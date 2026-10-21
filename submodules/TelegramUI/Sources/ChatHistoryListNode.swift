@@ -1329,7 +1329,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
             strongSelf.isDraggingForOverscrollAction = false
             let expandProgress = strongSelf.currentOverscrollExpandProgress
             strongSelf.currentOverscrollExpandProgress = 0.0
-            if strongSelf.offerNextChannelToRead, expandProgress >= 0.99 {
+            if strongSelf.offerNextChannelToRead && !RayGramSettings.disableJumpToNextChannel, expandProgress >= 0.99 {
                 if let nextChannelToRead = strongSelf.nextChannelToRead {
                     // A landing may already be running from an earlier release — the control stays at
                     // full expansion for its whole duration, so a second qualifying release inside it
@@ -1981,7 +1981,9 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         }
         
         let recommendedChannels: Signal<RecommendedChannels?, NoError>
-        if let peerId = self.chatLocation.peerId, peerId.namespace == Namespaces.Peer.CloudChannel {
+        if RayGramSettings.disableSimilarChannels {
+            recommendedChannels = .single(nil)
+        } else if let peerId = self.chatLocation.peerId, peerId.namespace == Namespaces.Peer.CloudChannel {
             recommendedChannels = self.context.engine.peers.recommendedChannels(peerId: peerId)
         } else {
             recommendedChannels = .single(nil)
@@ -2868,7 +2870,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         if self.freezeOverscrollControl {
             return
         }
-        if let offset = offset, offset < -0.1, self.offerNextChannelToRead, let chatControllerNode = self.controllerInteraction.chatControllerNode() as? ChatControllerNode, chatControllerNode.shouldAllowOverscrollActions {
+        if let offset = offset, offset < -0.1, self.offerNextChannelToRead && !RayGramSettings.disableJumpToNextChannel, let chatControllerNode = self.controllerInteraction.chatControllerNode() as? ChatControllerNode, chatControllerNode.shouldAllowOverscrollActions {
             let overscrollView: ComponentHostView<Empty>
             if let current = self.overscrollView {
                 overscrollView = current

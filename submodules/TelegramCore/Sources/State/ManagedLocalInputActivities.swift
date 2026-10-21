@@ -174,6 +174,9 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
                     return .complete()
                 }
             }
+            if RayGramSettings.ghostTyping {
+                return .complete()
+            }
             
             if let inputPeer = apiInputPeer(peer) {
                 var flags: Int32 = 0

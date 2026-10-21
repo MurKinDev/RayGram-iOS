@@ -251,5 +251,9 @@ public func stringForMessageTimestampStatus(
         }
     }
     
+    if message.isDeleted {
+        dateText = "🗑 \(dateText)"
+    }
+    
     return dateText
 }

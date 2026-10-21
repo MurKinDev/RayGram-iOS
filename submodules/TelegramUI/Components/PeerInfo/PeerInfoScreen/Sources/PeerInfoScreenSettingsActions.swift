@@ -55,6 +55,8 @@ extension PeerInfoScreenNode {
             self.controller?.openAvatarForEditing()
         case .edit:
             self.headerNode.navigationButtonContainer.performAction?(.edit, nil, nil)
+        case .raygramSettings:
+            self.controller?.push(raygramSettingsController(context: self.context))
         case .proxy:
             self.controller?.push(proxySettingsController(context: self.context))
         case .profile:

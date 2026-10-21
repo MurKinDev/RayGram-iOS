@@ -1009,6 +1009,30 @@ public final class AccountContextImpl: AccountContext {
     }
     
     public func requestCall(peerId: PeerId, isVideo: Bool, completion: @escaping () -> Void) {
+        if RayGramSettings.confirmCalls {
+            let presentationData = self.sharedContext.currentPresentationData.with { $0 }
+            let _ = (self.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: peerId))
+            |> deliverOnMainQueue).start(next: { [weak self] peer in
+                guard let strongSelf = self, let peer = peer else {
+                    return
+                }
+                let title = isVideo ? presentationData.strings.UserInfo_VideoCall : presentationData.strings.UserInfo_PhoneCall
+                let peerTitle = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
+                let messageText = isVideo ? "Start video call with \(peerTitle)?" : "Start voice call with \(peerTitle)?"
+                
+                strongSelf.sharedContext.mainWindow?.present(textAlertController(context: strongSelf, title: title, text: messageText, actions: [
+                    TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}),
+                    TextAlertAction(type: .genericAction, title: title, action: {
+                        strongSelf.executeRequestCall(peerId: peerId, isVideo: isVideo, completion: completion)
+                    })
+                ]), on: .root)
+            })
+        } else {
+            self.executeRequestCall(peerId: peerId, isVideo: isVideo, completion: completion)
+        }
+    }
+    
+    private func executeRequestCall(peerId: PeerId, isVideo: Bool, completion: @escaping () -> Void) {
         guard let callResult = self.sharedContext.callManager?.requestCall(context: self, peerId: peerId, isVideo: isVideo, endCurrentIfAny: false) else {
             return
         }

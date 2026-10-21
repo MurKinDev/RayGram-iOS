@@ -491,6 +491,9 @@ private class AdMessagesHistoryContextImpl {
             return transaction.getPeer(peerId).flatMap(apiInputPeer)
         }
         |> mapToSignal { inputPeer -> Signal<(interPostInterval: Int32?, startDelay: Int32?, betweenDelay: Int32?, messages: [Message]), NoError> in
+            if RayGramSettings.blockSponsoredMessages {
+                return .single((nil, nil, nil, []))
+            }
             guard let inputPeer else {
                 return .single((nil, nil, nil, []))
             }
