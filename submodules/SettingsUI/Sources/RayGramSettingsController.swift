@@ -292,52 +292,52 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
 }
 
 public func raygramSettingsController(context: AccountContext) -> ViewController {
-    let updatePromise = ValuePromise<Void>((), ignoreRepeated: false)
+    let updatePromise = ValuePromise<Bool>(true, ignoreRepeated: false)
     
     let arguments = RayGramSettingsControllerArguments(
         updateGhostReadMessages: { value in
             RayGramSettings.ghostReadMessages = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateGhostReadStories: { value in
             RayGramSettings.ghostReadStories = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateGhostTyping: { value in
             RayGramSettings.ghostTyping = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateAntiRecall: { value in
             RayGramSettings.antiRecall = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateSaveExpiringMedia: { value in
             RayGramSettings.saveExpiringMedia = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateBypassNoForwards: { value in
             RayGramSettings.bypassNoForwards = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateBlockSponsoredMessages: { value in
             RayGramSettings.blockSponsoredMessages = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateDisableSimilarChannels: { value in
             RayGramSettings.disableSimilarChannels = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateDisableJumpToNextChannel: { value in
             RayGramSettings.disableJumpToNextChannel = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateConfirmCalls: { value in
             RayGramSettings.confirmCalls = value
-            updatePromise.set(())
+            updatePromise.set(true)
         },
         updateShowSeconds: { value in
             RayGramSettings.showSeconds = value
-            updatePromise.set(())
+            updatePromise.set(true)
         }
     )
     
