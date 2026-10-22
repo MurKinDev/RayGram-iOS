@@ -452,18 +452,22 @@ private class AdMessagesHistoryContextImpl {
         self.stateValue = State(interPostInterval: nil, messages: [])
 
         if messageId == nil {
-            self.state.set(CachedState.getCached(postbox: account.postbox, peerId: peerId)
-            |> mapToSignal { cachedState -> Signal<State, NoError> in
-                if let cachedState = cachedState, cachedState.timestamp >= Int32(Date().timeIntervalSince1970) - 5 * 60 {
-                    return account.postbox.transaction { transaction -> State in
-                        return State(interPostInterval: cachedState.interPostInterval, messages: cachedState.messages.compactMap { message -> Message? in
-                            return message.toMessage(peerId: peerId, transaction: transaction)
-                        })
+            if RayGramSettings.blockSponsoredMessages {
+                self.state.set(.single(State(interPostInterval: nil, messages: [])))
+            } else {
+                self.state.set(CachedState.getCached(postbox: account.postbox, peerId: peerId)
+                |> mapToSignal { cachedState -> Signal<State, NoError> in
+                    if let cachedState = cachedState, cachedState.timestamp >= Int32(Date().timeIntervalSince1970) - 5 * 60 {
+                        return account.postbox.transaction { transaction -> State in
+                            return State(interPostInterval: cachedState.interPostInterval, messages: cachedState.messages.compactMap { message -> Message? in
+                                return message.toMessage(peerId: peerId, transaction: transaction)
+                            })
+                        }
+                    } else {
+                        return .single(State(interPostInterval: nil, messages: []))
                     }
-                } else {
-                    return .single(State(interPostInterval: nil, messages: []))
-                }
-            })
+                })
+            }
         }
 
         if !activateManually {
@@ -481,6 +485,12 @@ private class AdMessagesHistoryContextImpl {
             return
         }
         self.isActivated = true
+        
+        if RayGramSettings.blockSponsoredMessages {
+            self.stateValue = State(interPostInterval: nil, messages: [])
+            self.state.set(.single(State(interPostInterval: nil, messages: [])))
+            return
+        }
         
         let peerId = self.peerId
         let accountPeerId = self.account.peerId
@@ -643,7 +653,11 @@ public class AdMessagesHistoryContext {
             
             self.impl.with { impl in
                 let stateDisposable = impl.state.get().start(next: { state in
-                    subscriber.putNext((state.interPostInterval, state.messages, state.startDelay, state.betweenDelay))
+                    if RayGramSettings.blockSponsoredMessages {
+                        subscriber.putNext((nil, [], nil, nil))
+                    } else {
+                        subscriber.putNext((state.interPostInterval, state.messages, state.startDelay, state.betweenDelay))
+                    }
                 })
                 disposable.set(stateDisposable)
             }

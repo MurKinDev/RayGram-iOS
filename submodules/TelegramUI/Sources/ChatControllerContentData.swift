@@ -691,7 +691,7 @@ extension ChatControllerImpl {
                 }
                 
                 let adMessage: Signal<Message?, NoError>
-                if let adMessagesContext {
+                if let adMessagesContext, !RayGramSettings.blockSponsoredMessages {
                     adMessage = adMessagesContext.state |> map { $0.messages.first }
                 } else {
                     adMessage = .single(nil)

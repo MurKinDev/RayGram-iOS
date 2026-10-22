@@ -794,6 +794,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
 
     private let adMessagesContext: AdMessagesHistoryContext?
     private var adMessagesDisposable: Disposable?
+    private var raygramSettingsObserver: NSObjectProtocol?
     private var preloadAdPeerName: String?
     private let preloadAdPeerDisposable = MetaDisposable()
     private var didSetupRecommendedChannelsPreload = false
@@ -994,7 +995,11 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
                         return (10, fakeAdMessages, nil, nil)
                     }
                 } else {
-                    adMessages = adMessagesContext.state
+                    if RayGramSettings.blockSponsoredMessages {
+                        adMessages = .single((nil, [], nil, nil))
+                    } else {
+                        adMessages = adMessagesContext.state
+                    }
                 }
             }
         } else {
@@ -1059,6 +1064,21 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         }
 
         self.beginAdMessageManagement(adMessages: adMessages)
+        
+        self.raygramSettingsObserver = NotificationCenter.default.addObserver(
+            forName: RayGramSettings.didChangeNotification,
+            object: nil,
+            queue: .main,
+            using: { [weak self] _ in
+                guard let self else {
+                    return
+                }
+                if RayGramSettings.blockSponsoredMessages {
+                    self.pendingDynamicAdMessages = []
+                    self.allAdMessages = (nil, [], self.allAdMessages.version + 1)
+                }
+            }
+        )
         
         self.listView.accessibilityPageScrolledString = { [weak self] row, count in
             if let strongSelf = self {
@@ -1424,6 +1444,9 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         self.refreshDisplayedItemRangeTimer?.invalidate()
         self.genericReactionEffectDisposable?.dispose()
         self.adMessagesDisposable?.dispose()
+        if let raygramSettingsObserver = self.raygramSettingsObserver {
+            NotificationCenter.default.removeObserver(raygramSettingsObserver)
+        }
         self.presentationDataDisposable?.dispose()
         self.messageReadMetricsTrackerPendingMetricTimer?.invalidate()
         self.messageReadMetricsTrackerDisposable?.dispose()
@@ -1463,6 +1486,11 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
         self.adMessagesDisposable = (adMessages
         |> deliverOnMainQueue).startStrict(next: { [weak self] interPostInterval, messages, _, _ in
             guard let self else {
+                return
+            }
+            if RayGramSettings.blockSponsoredMessages {
+                self.pendingDynamicAdMessages = []
+                self.allAdMessages = (nil, [], self.allAdMessages.version + 1)
                 return
             }
             
@@ -2372,8 +2400,8 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
                     customChannelDiscussionReadState: customChannelDiscussionReadState,
                     customThreadOutgoingReadState: customThreadOutgoingReadState,
                     cachedData: data.cachedData,
-                    adMessage: allAdMessages.fixed,
-                    dynamicAdMessages: allAdMessages.opportunistic,
+                    adMessage: RayGramSettings.blockSponsoredMessages ? nil : allAdMessages.fixed,
+                    dynamicAdMessages: RayGramSettings.blockSponsoredMessages ? [] : allAdMessages.opportunistic,
                     isMusicPlaylist: isMusicPlaylist,
                     pinToTopStableId: pinToTopStableId
                 )
