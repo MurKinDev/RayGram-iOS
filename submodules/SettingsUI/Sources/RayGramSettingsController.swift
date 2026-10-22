@@ -15,6 +15,7 @@ private final class RayGramSettingsControllerArguments {
     let updateGhostTyping: (Bool) -> Void
     
     let updateAntiRecall: (Bool) -> Void
+    let updateMarkDeletedMessages: (Bool) -> Void
     let updateSaveExpiringMedia: (Bool) -> Void
     
     let updateBypassNoForwards: (Bool) -> Void
@@ -31,6 +32,7 @@ private final class RayGramSettingsControllerArguments {
         updateGhostReadStories: @escaping (Bool) -> Void,
         updateGhostTyping: @escaping (Bool) -> Void,
         updateAntiRecall: @escaping (Bool) -> Void,
+        updateMarkDeletedMessages: @escaping (Bool) -> Void,
         updateSaveExpiringMedia: @escaping (Bool) -> Void,
         updateBypassNoForwards: @escaping (Bool) -> Void,
         updateBlockSponsoredMessages: @escaping (Bool) -> Void,
@@ -43,6 +45,7 @@ private final class RayGramSettingsControllerArguments {
         self.updateGhostReadStories = updateGhostReadStories
         self.updateGhostTyping = updateGhostTyping
         self.updateAntiRecall = updateAntiRecall
+        self.updateMarkDeletedMessages = updateMarkDeletedMessages
         self.updateSaveExpiringMedia = updateSaveExpiringMedia
         self.updateBypassNoForwards = updateBypassNoForwards
         self.updateBlockSponsoredMessages = updateBlockSponsoredMessages
@@ -71,6 +74,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     
     case antiRecallHeader
     case antiRecall(Bool)
+    case markDeletedMessages(Bool)
     case saveExpiringMedia(Bool)
     case antiRecallFooter
     
@@ -97,7 +101,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
         switch self {
         case .ghostHeader, .ghostReadMessages, .ghostReadStories, .ghostTyping, .ghostFooter:
             return RayGramSettingsSection.ghost.rawValue
-        case .antiRecallHeader, .antiRecall, .saveExpiringMedia, .antiRecallFooter:
+        case .antiRecallHeader, .antiRecall, .markDeletedMessages, .saveExpiringMedia, .antiRecallFooter:
             return RayGramSettingsSection.antiRecall.rawValue
         case .restrictionsHeader, .bypassNoForwards, .restrictionsFooter:
             return RayGramSettingsSection.restrictions.rawValue
@@ -126,10 +130,12 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 10
         case .antiRecall:
             return 11
-        case .saveExpiringMedia:
+        case .markDeletedMessages:
             return 12
-        case .antiRecallFooter:
+        case .saveExpiringMedia:
             return 13
+        case .antiRecallFooter:
+            return 14
         case .restrictionsHeader:
             return 20
         case .bypassNoForwards:
@@ -193,12 +199,16 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Save Deleted Messages", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateAntiRecall(value)
             })
+        case let .markDeletedMessages(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Mark with Trash Icon", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateMarkDeletedMessages(value)
+            })
         case let .saveExpiringMedia(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Save Expiring Media", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateSaveExpiringMedia(value)
             })
         case .antiRecallFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Deleted messages will remain in the chat marked with a 🗑 icon. Self-destructing and view-once media will remain viewable."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Deleted messages will remain in the chat and can be marked with a native trash icon. Self-destructing and view-once media will remain viewable."), sectionId: self.section)
             
         case .restrictionsHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "RESTRICTIONS", sectionId: self.section)
@@ -242,7 +252,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
         case .aboutHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "ABOUT", sectionId: self.section)
         case .aboutVersion:
-            return ItemListDisclosureItem(presentationData: presentationData, title: "RayGram iOS", label: "v13.0 (35313)", sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
+            return ItemListDisclosureItem(presentationData: presentationData, title: "RayGram iOS", label: "v13.0 (35317)", sectionId: self.section, style: .blocks, disclosureStyle: .none, action: nil)
         case .aboutFooter:
             return ItemListTextItem(presentationData: presentationData, text: .markdown("RayGram — Pure, high-performance, bloat-free native Telegram client for iOS."), sectionId: self.section)
         }
@@ -262,6 +272,9 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     // Anti-Recall
     entries.append(.antiRecallHeader)
     entries.append(.antiRecall(RayGramSettings.antiRecall))
+    if RayGramSettings.antiRecall {
+        entries.append(.markDeletedMessages(RayGramSettings.markDeletedMessages))
+    }
     entries.append(.saveExpiringMedia(RayGramSettings.saveExpiringMedia))
     entries.append(.antiRecallFooter)
     
@@ -309,6 +322,10 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateAntiRecall: { value in
             RayGramSettings.antiRecall = value
+            updatePromise.set(true)
+        },
+        updateMarkDeletedMessages: { value in
+            RayGramSettings.markDeletedMessages = value
             updatePromise.set(true)
         },
         updateSaveExpiringMedia: { value in

@@ -13,6 +13,7 @@ public final class RayGramSettings {
         static let ghostTyping = "RayGram_ghostTyping"
         
         static let antiRecall = "RayGram_antiRecall"
+        static let markDeletedMessages = "RayGram_markDeletedMessages"
         static let saveExpiringMedia = "RayGram_saveExpiringMedia"
         
         static let bypassNoForwards = "RayGram_bypassNoForwards"
@@ -55,6 +56,11 @@ public final class RayGramSettings {
     public static var antiRecall: Bool {
         get { return getBool(key: Keys.antiRecall, defaultValue: true) }
         set { setBool(key: Keys.antiRecall, value: newValue) }
+    }
+    
+    public static var markDeletedMessages: Bool {
+        get { return getBool(key: Keys.markDeletedMessages, defaultValue: true) }
+        set { setBool(key: Keys.markDeletedMessages, value: newValue) }
     }
     
     public static var saveExpiringMedia: Bool {
