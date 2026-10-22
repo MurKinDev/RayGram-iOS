@@ -59,8 +59,10 @@ jobs:
           # Generate configuration dynamically from secrets
           python3 -c "
           import os, json
-          api_id = os.environ.get('API_ID') or '00000000'
-          api_hash = os.environ.get('API_HASH') or '00000000000000000000000000000000'
+          api_id = (os.environ.get('API_ID') or '').strip()
+          api_hash = (os.environ.get('API_HASH') or '').strip()
+          if not api_id or not api_hash:
+              raise ValueError('Missing required secrets: API_ID and API_HASH')
           config = {
               'bundle_id': 'ph.telegra.Telegraph',
               'api_id': str(api_id).strip(),
