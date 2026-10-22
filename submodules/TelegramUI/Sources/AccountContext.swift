@@ -1016,7 +1016,7 @@ public final class AccountContextImpl: AccountContext {
                 guard let strongSelf = self, let peer = peer else {
                     return
                 }
-                let title = isVideo ? presentationData.strings.UserInfo_VideoCall : presentationData.strings.UserInfo_PhoneCall
+                let title = isVideo ? presentationData.strings.UserInfo_TelegramVideoCall : presentationData.strings.UserInfo_TelegramCall
                 let peerTitle = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
                 let messageText = isVideo ? "Start video call with \(peerTitle)?" : "Start voice call with \(peerTitle)?"
                 
