@@ -112,6 +112,38 @@ public func chatMessageGalleryControllerData(
         standalone = true
     }
     
+    var hasMatchingMediaTag = false
+    var hasCheckableMedia = false
+    for media in message.effectiveMedia {
+        if media is TelegramMediaImage {
+            hasCheckableMedia = true
+            if message.tags.contains(.photoOrVideo) {
+                hasMatchingMediaTag = true
+            }
+        } else if let file = media as? TelegramMediaFile {
+            if file.isVideo {
+                hasCheckableMedia = true
+                if file.isAnimated {
+                    if message.tags.contains(.gif) {
+                        hasMatchingMediaTag = true
+                    }
+                } else {
+                    if message.tags.contains(.photoOrVideo) {
+                        hasMatchingMediaTag = true
+                    }
+                }
+            } else if !file.isVoice && !file.isInstantVideo && !file.isSticker {
+                hasCheckableMedia = true
+                if message.tags.contains(.file) {
+                    hasMatchingMediaTag = true
+                }
+            }
+        }
+    }
+    if hasCheckableMedia && !hasMatchingMediaTag {
+        standalone = true
+    }
+    
     var galleryMedia: EngineRawMedia?
     var otherMedia: EngineRawMedia?
     var instantPageMedia: (TelegramMediaWebpage, [InstantPageGalleryEntry])?
@@ -293,7 +325,7 @@ public func chatMessageGalleryControllerData(
                 
                 var source = source
                 if standalone {
-                    source = .standaloneMessage(message, nil)
+                    source = .standaloneMessage(message, mediaSubject)
                 }
                 
                 if internalDocumentItemSupportsMimeType(file.mimeType, fileName: file.fileName ?? "file") {

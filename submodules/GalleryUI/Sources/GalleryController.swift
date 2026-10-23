@@ -568,14 +568,23 @@ public final class GalleryControllerPresentationArguments {
 }
 
 private enum GalleryMessageHistoryView {
-    case view(MessageHistoryView, Bool)
-    case entries([MessageHistoryEntry], Bool, Bool)
+    case view(MessageHistoryView, Bool, Message?)
+    case entries([MessageHistoryEntry], Bool, Bool, Message?)
+    
+    var targetMessage: Message? {
+        switch self {
+        case let .view(_, _, msg):
+            return msg
+        case let .entries(_, _, _, msg):
+            return msg
+        }
+    }
     
     var entries: [MessageHistoryEntry] {
         switch self {
-        case let .view(view, _):
+        case let .view(view, _, _):
             return view.entries
-        case let .entries(entries, _, _):
+        case let .entries(entries, _, _, _):
             return entries
         }
     }
@@ -584,32 +593,32 @@ private enum GalleryMessageHistoryView {
         switch self {
         case .entries:
             return nil
-        case let .view(view, _):
+        case let .view(view, _, _):
             return view.tag
         }
     }
     
     var hasEarlier: Bool {
         switch self {
-        case let .entries(_, hasEarlier, _):
+        case let .entries(_, hasEarlier, _, _):
             return hasEarlier
-        case let .view(view, _):
+        case let .view(view, _, _):
             return view.earlierId != nil
         }
     }
     
     var hasLater: Bool {
         switch self {
-        case let .entries(_ , _, hasLater):
+        case let .entries(_ , _, hasLater, _):
             return hasLater
-        case let .view(view, _):
+        case let .view(view, _, _):
             return view.laterId != nil
         }
     }
     
     var peerIsCopyProtected: Bool {
         switch self {
-        case let .view(_, peerIsCopyProtected):
+        case let .view(_, peerIsCopyProtected, _):
             return peerIsCopyProtected
         case .entries:
             return false
@@ -891,7 +900,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
             let (message, peerIsCopyProtected) = messageAndPeerIsCopyProtected!
             switch source {
                 case let .peerMessagesAtId(_, chatLocation, customTag, chatLocationContextHolder):
-                    if let tags = tagsForMessage(message) {
+                    if let tags = tagsForMessage(message), message.tags.contains(tags) {
                         let namespaces: MessageIdNamespaces
                         if Namespaces.Message.allScheduled.contains(message.id.namespace) {
                             namespaces = .just(Namespaces.Message.allScheduled)
@@ -908,14 +917,14 @@ public class GalleryController: ViewController, StandalonePresentableController,
                         }
                         return context.account.postbox.aroundMessageHistoryViewForLocation(context.chatLocationInput(for: chatLocation, contextHolder: chatLocationContextHolder), anchor: .index(message.index), ignoreMessagesInTimestampRange: nil, ignoreMessageIds: Set(), count: 50, clipHoles: false, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: [], tag: inputTag, appendMessagesFromTheSameGroup: false, namespaces: namespaces, orderStatistics: [.combinedLocation])
                         |> mapToSignal { (view, _, _) -> Signal<GalleryMessageHistoryView?, NoError> in
-                            let mapped = GalleryMessageHistoryView.view(view, peerIsCopyProtected)
+                            let mapped = GalleryMessageHistoryView.view(view, peerIsCopyProtected, message)
                             return .single(mapped)
                         }
                     } else {
-                        return .single(GalleryMessageHistoryView.entries([MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false))], false, false))
+                        return .single(GalleryMessageHistoryView.entries([MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false))], false, false, message))
                 }
                 case .standaloneMessage:
-                    return .single(GalleryMessageHistoryView.entries([MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false))], false ,false))
+                    return .single(GalleryMessageHistoryView.entries([MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false))], false ,false, message))
                 case let .custom(messages, _, _):
                     return messages
                     |> map { messages, totalCount, hasMore in
@@ -925,7 +934,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                             entries.append(MessageHistoryEntry(message: message, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false)))
                             index -= 1
                         }
-                        return GalleryMessageHistoryView.entries(entries, hasMore, false)
+                        return GalleryMessageHistoryView.entries(entries, hasMore, false, nil)
                     }
             }
         }
@@ -964,7 +973,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                             mediaSubject = mediaSubjectValue
                         }
                         
-                        let entries = galleryEntriesForMessageHistoryEntries(view.entries, mediaSubject: mediaSubject)
+                        var entries = galleryEntriesForMessageHistoryEntries(view.entries, mediaSubject: mediaSubject)
       
                         var centralEntryStableId: GalleryEntryStableId?
                         loop: for i in 0 ..< entries.count {
@@ -987,6 +996,12 @@ public class GalleryController: ViewController, StandalonePresentableController,
                                         break loop
                                     }
                             }
+                        }
+                        
+                        if centralEntryStableId == nil, let fallbackMessage = view.targetMessage {
+                            let fallbackEntry = MessageHistoryEntry(message: fallbackMessage, isRead: false, location: nil, monthLocation: nil, attributes: MutableMessageHistoryEntryAttributes(authorIsContact: false))
+                            entries = galleryEntriesForMessageHistoryEntries([fallbackEntry], mediaSubject: mediaSubject)
+                            centralEntryStableId = entries.first?.stableId
                         }
                         
                         strongSelf.tag = view.tag
@@ -1745,7 +1760,7 @@ public class GalleryController: ViewController, StandalonePresentableController,
                                 }
                                 let signal = strongSelf.context.account.postbox.aroundMessageHistoryViewForLocation(strongSelf.context.chatLocationInput(for: chatLocation, contextHolder: chatLocationContextHolder), anchor: .index(reloadAroundIndex), ignoreMessagesInTimestampRange: nil, ignoreMessageIds: Set(), count: 50, clipHoles: false, fixedCombinedReadStates: nil, topTaggedMessageIdNamespaces: [], tag: tag, appendMessagesFromTheSameGroup: false, namespaces: namespaces, orderStatistics: [.combinedLocation])
                                 |> mapToSignal { (view, _, _) -> Signal<GalleryMessageHistoryView?, NoError> in
-                                    let mapped = GalleryMessageHistoryView.view(view, peerIsCopyProtected)
+                                    let mapped = GalleryMessageHistoryView.view(view, peerIsCopyProtected, nil)
                                     return .single(mapped)
                                 }
                                 |> take(1)
