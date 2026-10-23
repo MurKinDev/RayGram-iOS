@@ -1453,6 +1453,44 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                     }
                 }
                 
+                if let history = (message.attributes.first(where: { $0 is EditedMessageHistoryAttribute }) as? EditedMessageHistoryAttribute)?.versions, !history.isEmpty {
+                    let reversedHistory = Array(history.reversed().prefix(5))
+                    for (index, version) in reversedHistory.enumerated() {
+                        let title: String
+                        if history.count == 1 {
+                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал" : "Original"
+                        } else if index == 0 {
+                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Предыдущая версия" : "Previous Version"
+                        } else if index == reversedHistory.count - 1 {
+                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал" : "Original"
+                        } else {
+                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Версия \(history.count - index)" : "Version \(history.count - index)"
+                        }
+                        
+                        let displayPreview = version.text.replacingOccurrences(of: "\n", with: " ")
+                        let versionText = version.text
+                        let copyToastText = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied
+                        
+                        actions.append(.action(ContextMenuActionItem(
+                            text: title,
+                            textLayout: .secondLineWithValue(displayPreview),
+                            icon: { theme in
+                                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
+                            },
+                            action: { _, f in
+                                if !isCopyProtected {
+                                    storeMessageTextInPasteboard(versionText, entities: nil)
+                                    Queue.mainQueue().after(0.2, {
+                                        let content: UndoOverlayContent = .copy(text: copyToastText)
+                                        controllerInteraction.displayUndo(content)
+                                    })
+                                }
+                                f(.default)
+                            }
+                        )))
+                    }
+                }
+                
                 var showTranslateIfTopical = false
                 if let peer = chatPresentationInterfaceState.renderedPeer?.chatMainPeer as? TelegramChannel, !(peer.addressName ?? "").isEmpty {
                     showTranslateIfTopical = true

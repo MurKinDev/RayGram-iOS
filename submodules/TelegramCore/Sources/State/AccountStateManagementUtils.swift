@@ -4703,6 +4703,31 @@ func replayFinalState(
                         }
                     }
                     
+                    if RayGramSettings.saveEditHistory {
+                        if !previousMessage.text.isEmpty && previousMessage.text != message.text {
+                            var editHistoryVersions: [EditHistoryVersion] = []
+                            if let existingHistory = previousMessage.attributes.first(where: { $0 is EditedMessageHistoryAttribute }) as? EditedMessageHistoryAttribute {
+                                editHistoryVersions = existingHistory.versions
+                            }
+                            if editHistoryVersions.last?.text != previousMessage.text {
+                                let versionDate = previousMessage.editedTime ?? previousMessage.timestamp
+                                editHistoryVersions.append(EditHistoryVersion(text: previousMessage.text, timestamp: versionDate))
+                            }
+                            updatedAttributes.removeAll(where: { $0 is EditedMessageHistoryAttribute })
+                            updatedAttributes.append(EditedMessageHistoryAttribute(versions: editHistoryVersions))
+                        } else if let existingHistory = previousMessage.attributes.first(where: { $0 is EditedMessageHistoryAttribute }) as? EditedMessageHistoryAttribute {
+                            if !updatedAttributes.contains(where: { $0 is EditedMessageHistoryAttribute }) {
+                                updatedAttributes.append(existingHistory)
+                            }
+                        }
+                    }
+                    
+                    if let deletedAttribute = previousMessage.attributes.first(where: { $0 is DeletedMessageAttribute }) as? DeletedMessageAttribute {
+                        if !updatedAttributes.contains(where: { $0 is DeletedMessageAttribute }) {
+                            updatedAttributes.append(deletedAttribute)
+                        }
+                    }
+                    
                     if let message = locallyRenderedMessage(message: message, peers: peers) {
                         generatedEvent = reactionGeneratedEvent(previousMessage.reactionsAttribute, message.reactionsAttribute, message: message, transaction: transaction)
                     }

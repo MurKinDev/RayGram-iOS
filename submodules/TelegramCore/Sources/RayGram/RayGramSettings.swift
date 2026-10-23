@@ -15,6 +15,7 @@ public final class RayGramSettings {
         static let antiRecall = "RayGram_antiRecall"
         static let markDeletedMessages = "RayGram_markDeletedMessages"
         static let saveExpiringMedia = "RayGram_saveExpiringMedia"
+        static let saveEditHistory = "RayGram_saveEditHistory"
         
         static let bypassNoForwards = "RayGram_bypassNoForwards"
         
@@ -66,6 +67,11 @@ public final class RayGramSettings {
     public static var saveExpiringMedia: Bool {
         get { return getBool(key: Keys.saveExpiringMedia, defaultValue: true) }
         set { setBool(key: Keys.saveExpiringMedia, value: newValue) }
+    }
+    
+    public static var saveEditHistory: Bool {
+        get { return getBool(key: Keys.saveEditHistory, defaultValue: true) }
+        set { setBool(key: Keys.saveEditHistory, value: newValue) }
     }
     
     public static var bypassNoForwards: Bool {

@@ -16,6 +16,28 @@ import WebUI
 import AvatarNode
 import PeerNameColorItem
 import BoostLevelIconComponent
+import ContextUI
+import UndoUI
+import AppBundle
+
+private func presentIdContextMenu(controller: ViewController?, presentationData: PresentationData, idString: String, node: ASDisplayNode, gesture: ContextGesture?) {
+    guard let sourceNode = node as? ContextExtractedContentContainingNode else {
+        return
+    }
+    let copyAction = { [weak controller] in
+        UIPasteboard.general.string = idString
+        controller?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+    }
+    var items: [ContextMenuItem] = []
+    items.append(.action(ContextMenuActionItem(text: presentationData.strings.Common_Copy, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
+        c?.dismiss {
+            copyAction()
+        }
+    })))
+    let actions = ContextController.Items(content: .list(items))
+    let contextController = makeContextController(presentationData: presentationData, source: .extracted(PeerInfoContextExtractedContentSource(sourceNode: sourceNode)), items: .single(actions), gesture: gesture)
+    controller?.present(contextController, in: .window(.root))
+}
 
 private let enabledPublicBioEntities: EnabledEntityTypes = [.allUrl, .mention, .hashtag]
 private let enabledPrivateBioEntities: EnabledEntityTypes = [.internalUrl, .mention, .hashtag]
@@ -101,6 +123,7 @@ func infoItems(
         let ItemPersonalChannelHeader = 2000
         let ItemPersonalChannel = 2001
         let ItemPhoneNumber = 3000
+        let ItemUserId = 3050
         let ItemUsername = 3001
         let ItemBirthdate = 3002
         let ItemAbout = 3003
@@ -189,6 +212,27 @@ func infoItems(
                 interaction.requestLayout(animated)
             }))
         }
+        
+        let idString = "\(user.id.id._internalGetInt64Value())"
+        items[currentPeerInfoSection]!.append(
+            PeerInfoScreenLabeledValueItem(
+                id: ItemUserId,
+                label: "ID",
+                text: idString,
+                textColor: .accent,
+                action: { _, _ in
+                    UIPasteboard.general.string = idString
+                    interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                },
+                contextAction: { node, gesture, _ in
+                    presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: idString, node: node, gesture: gesture)
+                },
+                requestLayout: { animated in
+                    interaction.requestLayout(animated)
+                }
+            )
+        )
+        
         if let mainUsername = user.addressName {
             var additionalUsernames: String?
             let usernames = user.usernames.filter { $0.isActive && $0.username != mainUsername }
@@ -551,6 +595,7 @@ func infoItems(
             }
         }
     } else if case let .channel(channel) = data.peer {
+        let ItemChannelId = 99
         let ItemUsername = 1
         let ItemUsernameInfo = 2
         let ItemAbout = 3
@@ -623,6 +668,26 @@ func infoItems(
                     }
                 ))
             }
+            
+            let channelIdString = "\(channel.id.id._internalGetInt64Value())"
+            items[currentPeerInfoSection]!.append(
+                PeerInfoScreenLabeledValueItem(
+                    id: ItemChannelId,
+                    label: "ID",
+                    text: channelIdString,
+                    textColor: .accent,
+                    action: { _, _ in
+                        UIPasteboard.general.string = channelIdString
+                        interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    },
+                    contextAction: { node, gesture, _ in
+                        presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: channelIdString, node: node, gesture: gesture)
+                    },
+                    requestLayout: { animated in
+                        interaction.requestLayout(animated)
+                    }
+                )
+            )
             
             if let mainUsername = channel.addressName {
                 var additionalUsernames: String?
@@ -823,6 +888,27 @@ func infoItems(
             }
         }
     } else if case let .legacyGroup(group) = data.peer {
+        let ItemGroupId = 100
+        let groupIdString = "\(group.id.id._internalGetInt64Value())"
+        items[currentPeerInfoSection]!.append(
+            PeerInfoScreenLabeledValueItem(
+                id: ItemGroupId,
+                label: "ID",
+                text: groupIdString,
+                textColor: .accent,
+                action: { _, _ in
+                    UIPasteboard.general.string = groupIdString
+                    interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                },
+                contextAction: { node, gesture, _ in
+                    presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: groupIdString, node: node, gesture: gesture)
+                },
+                requestLayout: { animated in
+                    interaction.requestLayout(animated)
+                }
+            )
+        )
+        
         if let cachedData = data.cachedData as? CachedGroupData {
             let aboutText: String?
             if group.isFake {

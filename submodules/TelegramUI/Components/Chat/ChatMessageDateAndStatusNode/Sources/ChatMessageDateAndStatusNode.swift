@@ -617,7 +617,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
             let dateFont = Font.regular(floor(arguments.presentationData.fontSize.baseDisplaySize * 11.0 / 17.0))
             let attributedString = NSMutableAttributedString(string: updatedDateText, font: dateFont, textColor: dateColor)
             if let range = updatedDateText.range(of: "🗑") {
-                let iconHeight = floor(arguments.presentationData.fontSize.baseDisplaySize * 10.0 / 17.0)
+                let iconHeight = floor(arguments.presentationData.fontSize.baseDisplaySize * 11.2 / 17.0)
                 let iconWidth = floor(iconHeight * 0.85)
                 let targetSize = CGSize(width: iconWidth, height: iconHeight)
                 if let rawTrashImage = UIImage(bundleImageName: "Chat/Context Menu/Delete"),
