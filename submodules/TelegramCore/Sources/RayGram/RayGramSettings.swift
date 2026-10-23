@@ -25,6 +25,8 @@ public final class RayGramSettings {
         
         static let confirmCalls = "RayGram_confirmCalls"
         static let showSeconds = "RayGram_showSeconds"
+        
+        static let enableFakeGifts = "RayGram_enableFakeGifts"
     }
     
     private static func getBool(key: String, defaultValue: Bool) -> Bool {
@@ -102,5 +104,10 @@ public final class RayGramSettings {
     public static var showSeconds: Bool {
         get { return getBool(key: Keys.showSeconds, defaultValue: false) }
         set { setBool(key: Keys.showSeconds, value: newValue) }
+    }
+    
+    public static var enableFakeGifts: Bool {
+        get { return getBool(key: Keys.enableFakeGifts, defaultValue: true) }
+        set { setBool(key: Keys.enableFakeGifts, value: newValue) }
     }
 }

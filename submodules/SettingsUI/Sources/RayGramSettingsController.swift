@@ -27,6 +27,7 @@ private final class RayGramSettingsControllerArguments {
     
     let updateConfirmCalls: (Bool) -> Void
     let updateShowSeconds: (Bool) -> Void
+    let updateFakeGifts: (Bool) -> Void
     
     init(
         updateGhostReadMessages: @escaping (Bool) -> Void,
@@ -41,7 +42,8 @@ private final class RayGramSettingsControllerArguments {
         updateDisableSimilarChannels: @escaping (Bool) -> Void,
         updateDisableJumpToNextChannel: @escaping (Bool) -> Void,
         updateConfirmCalls: @escaping (Bool) -> Void,
-        updateShowSeconds: @escaping (Bool) -> Void
+        updateShowSeconds: @escaping (Bool) -> Void,
+        updateFakeGifts: @escaping (Bool) -> Void
     ) {
         self.updateGhostReadMessages = updateGhostReadMessages
         self.updateGhostReadStories = updateGhostReadStories
@@ -56,6 +58,7 @@ private final class RayGramSettingsControllerArguments {
         self.updateDisableJumpToNextChannel = updateDisableJumpToNextChannel
         self.updateConfirmCalls = updateConfirmCalls
         self.updateShowSeconds = updateShowSeconds
+        self.updateFakeGifts = updateFakeGifts
     }
 }
 
@@ -65,6 +68,7 @@ private enum RayGramSettingsSection: Int32 {
     case restrictions
     case clean
     case qol
+    case fakeGifts
     case about
 }
 
@@ -97,6 +101,10 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     case showSeconds(Bool)
     case qolFooter
     
+    case fakeGiftsHeader
+    case fakeGifts(Bool)
+    case fakeGiftsFooter
+    
     case aboutHeader
     case aboutVersion
     case aboutFooter
@@ -113,6 +121,8 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return RayGramSettingsSection.clean.rawValue
         case .qolHeader, .confirmCalls, .showSeconds, .qolFooter:
             return RayGramSettingsSection.qol.rawValue
+        case .fakeGiftsHeader, .fakeGifts, .fakeGiftsFooter:
+            return RayGramSettingsSection.fakeGifts.rawValue
         case .aboutHeader, .aboutVersion, .aboutFooter:
             return RayGramSettingsSection.about.rawValue
         }
@@ -166,6 +176,12 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 42
         case .qolFooter:
             return 43
+        case .fakeGiftsHeader:
+            return 45
+        case .fakeGifts:
+            return 46
+        case .fakeGiftsFooter:
+            return 47
         case .aboutHeader:
             return 50
         case .aboutVersion:
@@ -259,6 +275,15 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
         case .qolFooter:
             return ItemListTextItem(presentationData: presentationData, text: .markdown("Prevents accidental calls by asking for confirmation, and displays exact timestamps with seconds (HH:MM:SS) for all messages."), sectionId: self.section)
             
+        case .fakeGiftsHeader:
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: "GIFTS", sectionId: self.section)
+        case let .fakeGifts(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Enable Fake Gifts", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateFakeGifts(value)
+            })
+        case .fakeGiftsFooter:
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Allows sending visual Star & NFT gifts directly in chat from yourself or your chat partner. Adds a button to the gift sending menu."), sectionId: self.section)
+            
         case .aboutHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "ABOUT", sectionId: self.section)
         case .aboutVersion:
@@ -306,6 +331,11 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     entries.append(.confirmCalls(RayGramSettings.confirmCalls))
     entries.append(.showSeconds(RayGramSettings.showSeconds))
     entries.append(.qolFooter)
+    
+    // Fake Gifts
+    entries.append(.fakeGiftsHeader)
+    entries.append(.fakeGifts(RayGramSettings.enableFakeGifts))
+    entries.append(.fakeGiftsFooter)
     
     // About
     entries.append(.aboutHeader)
@@ -369,6 +399,10 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateShowSeconds: { value in
             RayGramSettings.showSeconds = value
+            updatePromise.set(true)
+        },
+        updateFakeGifts: { value in
+            RayGramSettings.enableFakeGifts = value
             updatePromise.set(true)
         }
     )

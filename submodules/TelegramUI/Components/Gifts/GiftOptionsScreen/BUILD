@@ -48,6 +48,7 @@ swift_library(
         "//submodules/TelegramUI/Components/AlertComponent",
         "//submodules/TelegramUI/Components/AlertComponent/AlertTransferHeaderComponent",
         "//submodules/TelegramUI/Components/AvatarComponent",
+        "//submodules/OverlayStatusController",
     ],
     visibility = [
         "//visibility:public",

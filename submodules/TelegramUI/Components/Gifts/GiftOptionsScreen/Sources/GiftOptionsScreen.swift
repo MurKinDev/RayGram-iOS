@@ -28,6 +28,7 @@ import GiftViewScreen
 import UndoUI
 import EdgeEffect
 import GlassBarButtonComponent
+import ButtonComponent
 
 final class GiftOptionsScreenComponent: Component {
     typealias EnvironmentType = ViewControllerComponentContainer.Environment
@@ -146,6 +147,7 @@ final class GiftOptionsScreenComponent: Component {
         private let starsDescription = ComponentView<Empty>()
         private var starsItems: [AnyHashable: ComponentView<Empty>] = [:]
         private let tabSelector = ComponentView<Empty>()
+        private let fakeGiftButton = ComponentView<Empty>()
         private var starsFilter: StarsFilter = .all
         private var appliedStarsFilter: StarsFilter = .all
         
@@ -1006,6 +1008,62 @@ final class GiftOptionsScreenComponent: Component {
             }
         }
         
+        private func openFakeGiftPrompt() {
+            guard let component = self.component, let environment = self.environment, let controller = environment.controller() else {
+                return
+            }
+            let context = component.context
+            let peerId = component.peerId
+            let presentationData = context.sharedContext.currentPresentationData.with { $0 }
+            
+            let mainController: ViewController
+            if let parentController = controller.parentController() {
+                mainController = parentController
+            } else {
+                mainController = controller
+            }
+            
+            let alertController = fakeGiftPromptAlertController(
+                context: context,
+                peerId: peerId,
+                peer: self.state?.peer,
+                availableStarGifts: self.state?.starGifts ?? [],
+                presentationData: presentationData,
+                onSuccess: { [weak controller, weak mainController] gift, _, _ in
+                    controller?.dismiss()
+                    
+                    let toastText = presentationData.strings.primaryComponent.languageCode == "ru" ? "Фейк подарок отправлен в чат" : "Fake gift sent to chat"
+                    
+                    var animationFile: TelegramMediaFile?
+                    switch gift {
+                    case let .unique(uniqueGift):
+                        for attribute in uniqueGift.attributes {
+                            if case let .model(_, file, _, _) = attribute {
+                                animationFile = file
+                                break
+                            }
+                        }
+                    case let .generic(genericGift):
+                        animationFile = genericGift.file
+                    }
+                    
+                    let content: UndoOverlayContent
+                    if let animationFile {
+                        content = .sticker(context: context, file: animationFile, loop: true, title: nil, text: toastText, undoText: nil, customAction: nil)
+                    } else {
+                        content = .info(title: nil, text: toastText, timeout: nil, customUndoText: nil)
+                    }
+                    let undoController = UndoOverlayController(
+                        presentationData: presentationData,
+                        content: content,
+                        action: { _ in return false }
+                    )
+                    mainController?.present(undoController, in: .window(.root))
+                }
+            )
+            mainController.present(alertController, in: .window(.root))
+        }
+        
         func update(component: GiftOptionsScreenComponent, availableSize: CGSize, state: State, environment: Environment<EnvironmentType>, transition: ComponentTransition) -> CGSize {
             self.isUpdating = true
             defer {
@@ -1619,6 +1677,50 @@ final class GiftOptionsScreenComponent: Component {
                     }
                     contentHeight += starsDescriptionSize.height
                     contentHeight += 16.0
+                }
+            }
+            
+            if RayGramSettings.enableFakeGifts {
+                let fakeGiftButtonTitle = strings.primaryComponent.languageCode == "ru" ? "✨ Отправить фейк подарок" : "✨ Send Fake Gift"
+                let fakeGiftButtonSize = self.fakeGiftButton.update(
+                    transition: transition,
+                    component: AnyComponent(ButtonComponent(
+                        background: ButtonComponent.Background(
+                            color: theme.list.itemAccentColor.withMultipliedAlpha(0.12),
+                            foreground: theme.list.itemAccentColor,
+                            pressedColor: theme.list.itemAccentColor.withMultipliedAlpha(0.25),
+                            cornerRadius: 12.0
+                        ),
+                        content: AnyComponentWithIdentity(
+                            id: "fakeGift",
+                            component: AnyComponent(ButtonTextContentComponent(
+                                text: fakeGiftButtonTitle,
+                                badge: 0,
+                                textColor: theme.list.itemAccentColor,
+                                fontSize: 15.0,
+                                badgeBackground: .clear,
+                                badgeForeground: .clear
+                            ))
+                        ),
+                        action: { [weak self] in
+                            self?.openFakeGiftPrompt()
+                        }
+                    )),
+                    environment: {},
+                    containerSize: CGSize(width: availableSize.width - sideInset * 2.0, height: 44.0)
+                )
+                let fakeGiftButtonFrame = CGRect(origin: CGPoint(x: sideInset, y: contentHeight), size: CGSize(width: availableSize.width - sideInset * 2.0, height: 44.0))
+                if let fakeGiftButtonView = self.fakeGiftButton.view {
+                    if fakeGiftButtonView.superview == nil {
+                        self.scrollView.addSubview(fakeGiftButtonView)
+                    }
+                    transition.setFrame(view: fakeGiftButtonView, frame: fakeGiftButtonFrame)
+                }
+                contentHeight += fakeGiftButtonSize.height
+                contentHeight += 14.0
+            } else {
+                if let fakeGiftButtonView = self.fakeGiftButton.view {
+                    fakeGiftButtonView.removeFromSuperview()
                 }
             }
             
