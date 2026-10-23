@@ -12,7 +12,7 @@
 
 ### Брендинг и интерфейс
 - [x] **Имя приложения «RayGram»** на домашнем экране iOS (`CFBundleDisplayName = "RayGram"` во всех локализациях).
-- [x] **Кастомная иконка приложения** в стиле ray-desk (нативный iOS 18 Composer Icon `.icon` + ассеты `.xcassets` и `alticon`).
+- [x] **Кастомная иконка приложения** в стиле ray-desk (обновлённый увеличенный логотип, нативный iOS 18 Composer Icon `.icon` + ассеты `.xcassets` и `alticon`).
 - [x] **Экран настроек «RayGram»** в основном меню настроек Telegram.
 
 ### Приватность и «Призрак» (Ghost Mode)
