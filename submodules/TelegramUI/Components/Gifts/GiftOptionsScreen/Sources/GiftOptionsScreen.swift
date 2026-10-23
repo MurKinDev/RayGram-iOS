@@ -1009,7 +1009,7 @@ final class GiftOptionsScreenComponent: Component {
         }
         
         private func openFakeGiftPrompt() {
-            guard let component = self.component, let environment = self.environment, let controller = environment.controller() else {
+            guard let component = self.component, let environment = self.environment, let controller = environment.controller() as? GiftOptionsScreen else {
                 return
             }
             let context = component.context
