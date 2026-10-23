@@ -29,7 +29,7 @@ private func presentIdContextMenu(controller: ViewController?, presentationData:
         controller?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
     }
     var items: [ContextMenuItem] = []
-    items.append(.action(ContextMenuActionItem(text: presentationData.strings.Common_Copy, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
+    items.append(.action(ContextMenuActionItem(text: presentationData.strings.Conversation_ContextMenuCopy, icon: { theme in generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.contextMenu.primaryColor) }, action: { c, _ in
         c?.dismiss {
             copyAction()
         }
