@@ -19,7 +19,6 @@ private final class RayGramSettingsControllerArguments {
     let updateGhostTyping: (Bool) -> Void
     
     let updateAntiRecall: (Bool) -> Void
-    let updateMarkDeletedMessages: (Bool) -> Void
     let updateSaveEditHistory: (Bool) -> Void
     let updateSaveExpiringMedia: (Bool) -> Void
     
@@ -41,7 +40,6 @@ private final class RayGramSettingsControllerArguments {
         updateGhostReadStories: @escaping (Bool) -> Void,
         updateGhostTyping: @escaping (Bool) -> Void,
         updateAntiRecall: @escaping (Bool) -> Void,
-        updateMarkDeletedMessages: @escaping (Bool) -> Void,
         updateSaveEditHistory: @escaping (Bool) -> Void,
         updateSaveExpiringMedia: @escaping (Bool) -> Void,
         updateBypassNoForwards: @escaping (Bool) -> Void,
@@ -59,7 +57,6 @@ private final class RayGramSettingsControllerArguments {
         self.updateGhostReadStories = updateGhostReadStories
         self.updateGhostTyping = updateGhostTyping
         self.updateAntiRecall = updateAntiRecall
-        self.updateMarkDeletedMessages = updateMarkDeletedMessages
         self.updateSaveEditHistory = updateSaveEditHistory
         self.updateSaveExpiringMedia = updateSaveExpiringMedia
         self.updateBypassNoForwards = updateBypassNoForwards
@@ -96,7 +93,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     
     case antiRecallHeader
     case antiRecall(Bool)
-    case markDeletedMessages(Bool)
     case saveEditHistory(Bool)
     case saveExpiringMedia(Bool)
     case antiRecallFooter
@@ -130,7 +126,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return RayGramSettingsSection.access.rawValue
         case .ghostHeader, .ghostOnline, .ghostReadMessages, .ghostReadStories, .ghostTyping, .ghostFooter:
             return RayGramSettingsSection.ghost.rawValue
-        case .antiRecallHeader, .antiRecall, .markDeletedMessages, .saveEditHistory, .saveExpiringMedia, .antiRecallFooter:
+        case .antiRecallHeader, .antiRecall, .saveEditHistory, .saveExpiringMedia, .antiRecallFooter:
             return RayGramSettingsSection.antiRecall.rawValue
         case .restrictionsHeader, .bypassNoForwards, .restrictionsFooter:
             return RayGramSettingsSection.restrictions.rawValue
@@ -167,14 +163,12 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 10
         case .antiRecall:
             return 11
-        case .markDeletedMessages:
-            return 12
         case .saveEditHistory:
-            return 13
+            return 12
         case .saveExpiringMedia:
-            return 14
+            return 13
         case .antiRecallFooter:
-            return 15
+            return 14
         case .restrictionsHeader:
             return 20
         case .bypassNoForwards:
@@ -256,10 +250,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Save Deleted Messages", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateAntiRecall(value)
             })
-        case let .markDeletedMessages(value):
-            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Mark with Trash Icon", value: value, sectionId: self.section, style: .blocks, updated: { value in
-                arguments.updateMarkDeletedMessages(value)
-            })
         case let .saveEditHistory(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Save Edited Message History", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateSaveEditHistory(value)
@@ -269,7 +259,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
                 arguments.updateSaveExpiringMedia(value)
             })
         case .antiRecallFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Deleted messages will remain in the chat and can be marked with a native trash icon. Previous versions of edited messages will be saved and accessible in the message menu. Self-destructing and view-once media will remain viewable."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Deleted messages will remain in the chat with 70% opacity and marked with a native trash icon. Previous versions of edited messages will be saved and accessible in the message menu. Self-destructing and view-once media will remain viewable."), sectionId: self.section)
             
         case .restrictionsHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "RESTRICTIONS", sectionId: self.section)
@@ -353,9 +343,6 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     // Anti-Recall
     entries.append(.antiRecallHeader)
     entries.append(.antiRecall(RayGramSettings.antiRecall))
-    if RayGramSettings.antiRecall {
-        entries.append(.markDeletedMessages(RayGramSettings.markDeletedMessages))
-    }
     entries.append(.saveEditHistory(RayGramSettings.saveEditHistory))
     entries.append(.saveExpiringMedia(RayGramSettings.saveExpiringMedia))
     entries.append(.antiRecallFooter)
@@ -443,10 +430,6 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateAntiRecall: { value in
             RayGramSettings.antiRecall = value
-            updatePromise.set(true)
-        },
-        updateMarkDeletedMessages: { value in
-            RayGramSettings.markDeletedMessages = value
             updatePromise.set(true)
         },
         updateSaveEditHistory: { value in

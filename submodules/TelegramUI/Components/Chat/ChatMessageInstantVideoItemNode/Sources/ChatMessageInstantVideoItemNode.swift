@@ -644,6 +644,7 @@ public class ChatMessageInstantVideoItemNode: ChatMessageItemView, ASGestureReco
                     
                     strongSelf.appliedParams = params
                     strongSelf.appliedItem = item
+                    strongSelf.alpha = item.message.isDeleted ? 0.7 : 1.0
                     strongSelf.appliedHasAvatar = hasAvatar
                     strongSelf.appliedForwardInfo = ChatMessageAppliedForwardInfo(messageId: item.message.id, source: forwardSource, authorSignature: forwardAuthorSignature)
                     strongSelf.appliedCurrentlyPlaying = isPlaying

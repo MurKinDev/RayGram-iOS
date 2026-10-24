@@ -104,8 +104,7 @@ public final class RayGramSettings {
     }
     
     public static var markDeletedMessages: Bool {
-        get { return hasFullAccess && getBool(key: Keys.markDeletedMessages, defaultValue: true) }
-        set { setBool(key: Keys.markDeletedMessages, value: newValue) }
+        return true
     }
     
     public static var saveExpiringMedia: Bool {

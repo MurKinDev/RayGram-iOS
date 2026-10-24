@@ -251,7 +251,7 @@ public func stringForMessageTimestampStatus(
         }
     }
     
-    if message.isDeleted && RayGramSettings.markDeletedMessages {
+    if message.isDeleted {
         dateText = "🗑 \(dateText)"
     }
     

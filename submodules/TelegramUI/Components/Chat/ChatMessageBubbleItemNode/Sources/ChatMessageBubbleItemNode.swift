@@ -3962,6 +3962,12 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
         strongSelf.contentContainersWrapperNode.frame = CGRect(origin: CGPoint(), size: layout.contentSize)
         
         strongSelf.appliedItem = item
+        let targetAlpha: CGFloat = item.content.firstMessage.isDeleted ? 0.7 : 1.0
+        if animation.isAnimated {
+            animation.animator.updateAlpha(layer: strongSelf.layer, alpha: targetAlpha, completion: nil)
+        } else {
+            strongSelf.alpha = targetAlpha
+        }
         strongSelf.appliedForwardInfo = ChatMessageAppliedForwardInfo(messageId: item.content.firstMessage.id, source: forwardSource, authorSignature: forwardAuthorSignature)
         strongSelf.updateAccessibilityData(accessibilityData)
         strongSelf.disablesComments = disablesComments

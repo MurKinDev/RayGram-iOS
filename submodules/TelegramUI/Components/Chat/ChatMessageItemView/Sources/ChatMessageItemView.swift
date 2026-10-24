@@ -687,10 +687,12 @@ open class ChatMessageItemView: ListViewItemNode, ChatMessageItemNodeProtocol {
         self.item = nil
         self.scrollTiltProvider = nil
         self.frame = CGRect()
+        self.alpha = 1.0
     }
     
     open func setupItem(_ item: ChatMessageItem, synchronousLoad: Bool) {
         self.item = item
+        self.alpha = item.content.firstMessage.isDeleted ? 0.7 : 1.0
     }
     
     open func updateAccessibilityData(_ accessibilityData: ChatMessageAccessibilityData) {
