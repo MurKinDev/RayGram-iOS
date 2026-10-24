@@ -2,12 +2,14 @@ import Foundation
 
 public final class RayGramSettings {
     public static let didChangeNotification = Notification.Name("RayGramSettingsDidChangeNotification")
+    public static let didSendMessageNotification = Notification.Name("RayGramDidSendMessageNotification")
     
     private static let defaults: UserDefaults = {
         return UserDefaults.standard
     }()
     
     private enum Keys {
+        static let ghostOnline = "RayGram_ghostOnline"
         static let ghostReadMessages = "RayGram_ghostReadMessages"
         static let ghostReadStories = "RayGram_ghostReadStories"
         static let ghostTyping = "RayGram_ghostTyping"
@@ -74,6 +76,11 @@ public final class RayGramSettings {
     private static func setBool(key: String, value: Bool) {
         defaults.set(value, forKey: key)
         NotificationCenter.default.post(name: didChangeNotification, object: nil)
+    }
+    
+    public static var ghostOnline: Bool {
+        get { return hasFullAccess && getBool(key: Keys.ghostOnline, defaultValue: false) }
+        set { setBool(key: Keys.ghostOnline, value: newValue) }
     }
     
     public static var ghostReadMessages: Bool {

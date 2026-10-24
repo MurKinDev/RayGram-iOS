@@ -13,6 +13,7 @@ private final class RayGramSettingsControllerArguments {
     let checkAccess: () -> Void
     let openSupport: () -> Void
 
+    let updateGhostOnline: (Bool) -> Void
     let updateGhostReadMessages: (Bool) -> Void
     let updateGhostReadStories: (Bool) -> Void
     let updateGhostTyping: (Bool) -> Void
@@ -35,6 +36,7 @@ private final class RayGramSettingsControllerArguments {
     init(
         checkAccess: @escaping () -> Void,
         openSupport: @escaping () -> Void,
+        updateGhostOnline: @escaping (Bool) -> Void,
         updateGhostReadMessages: @escaping (Bool) -> Void,
         updateGhostReadStories: @escaping (Bool) -> Void,
         updateGhostTyping: @escaping (Bool) -> Void,
@@ -52,6 +54,7 @@ private final class RayGramSettingsControllerArguments {
     ) {
         self.checkAccess = checkAccess
         self.openSupport = openSupport
+        self.updateGhostOnline = updateGhostOnline
         self.updateGhostReadMessages = updateGhostReadMessages
         self.updateGhostReadStories = updateGhostReadStories
         self.updateGhostTyping = updateGhostTyping
@@ -85,6 +88,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     case checkAccessFooter
 
     case ghostHeader
+    case ghostOnline(Bool)
     case ghostReadMessages(Bool)
     case ghostReadStories(Bool)
     case ghostTyping(Bool)
@@ -124,7 +128,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
         switch self {
         case .checkAccessAction, .checkAccessFooter:
             return RayGramSettingsSection.access.rawValue
-        case .ghostHeader, .ghostReadMessages, .ghostReadStories, .ghostTyping, .ghostFooter:
+        case .ghostHeader, .ghostOnline, .ghostReadMessages, .ghostReadStories, .ghostTyping, .ghostFooter:
             return RayGramSettingsSection.ghost.rawValue
         case .antiRecallHeader, .antiRecall, .markDeletedMessages, .saveEditHistory, .saveExpiringMedia, .antiRecallFooter:
             return RayGramSettingsSection.antiRecall.rawValue
@@ -149,14 +153,16 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return -1
         case .ghostHeader:
             return 0
-        case .ghostReadMessages:
+        case .ghostOnline:
             return 1
-        case .ghostReadStories:
+        case .ghostReadMessages:
             return 2
-        case .ghostTyping:
+        case .ghostReadStories:
             return 3
-        case .ghostFooter:
+        case .ghostTyping:
             return 4
+        case .ghostFooter:
+            return 5
         case .antiRecallHeader:
             return 10
         case .antiRecall:
@@ -225,6 +231,10 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             })
         case .ghostHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "GHOST MODE", sectionId: self.section)
+        case let .ghostOnline(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Hide Online Status", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateGhostOnline(value)
+            })
         case let .ghostReadMessages(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Hide Read Receipts", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateGhostReadMessages(value)
@@ -238,7 +248,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
                 arguments.updateGhostTyping(value)
             })
         case .ghostFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Allows you to read messages, watch stories, and compose replies without notifying other users."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Prevents others from seeing you online, hides read receipts and story views, and blocks typing indicators."), sectionId: self.section)
             
         case .antiRecallHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "DELETED & EXPIRING MESSAGES", sectionId: self.section)
@@ -334,6 +344,7 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     
     // Ghost Mode
     entries.append(.ghostHeader)
+    entries.append(.ghostOnline(RayGramSettings.ghostOnline))
     entries.append(.ghostReadMessages(RayGramSettings.ghostReadMessages))
     entries.append(.ghostReadStories(RayGramSettings.ghostReadStories))
     entries.append(.ghostTyping(RayGramSettings.ghostTyping))
@@ -413,6 +424,10 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         openSupport: {
             context.sharedContext.applicationBindings.openUrl("https://t.me/murkindev")
+        },
+        updateGhostOnline: { value in
+            RayGramSettings.ghostOnline = value
+            updatePromise.set(true)
         },
         updateGhostReadMessages: { value in
             RayGramSettings.ghostReadMessages = value

@@ -15,8 +15,13 @@ private final class AccountPresenceManagerImpl {
     private var shouldKeepOnlinePresenceDisposable: Disposable?
     private let currentRequestDisposable = MetaDisposable()
     private var onlineTimer: SignalKitTimer?
+    private var offlineAfterMessageTimer: SignalKitTimer?
+    
+    private var settingsNotificationObserver: AnyObject?
+    private var messageSentNotificationObserver: AnyObject?
     
     private var wasOnline: Bool = false
+    private var isOnlineOnServer: Bool = false
     
     init(queue: Queue, shouldKeepOnlinePresence: Signal<Bool, NoError>, network: Network) {
         self.queue = queue
@@ -33,6 +38,28 @@ private final class AccountPresenceManagerImpl {
                 self.updatePresence(value)
             }
         })
+        
+        self.settingsNotificationObserver = NotificationCenter.default.addObserver(
+            forName: RayGramSettings.didChangeNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            guard let strongSelf = self else { return }
+            strongSelf.queue.async {
+                strongSelf.settingsChanged()
+            }
+        }
+        
+        self.messageSentNotificationObserver = NotificationCenter.default.addObserver(
+            forName: RayGramSettings.didSendMessageNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            guard let strongSelf = self else { return }
+            strongSelf.queue.async {
+                strongSelf.onMessageSent()
+            }
+        }
     }
     
     deinit {
@@ -40,25 +67,99 @@ private final class AccountPresenceManagerImpl {
         self.shouldKeepOnlinePresenceDisposable?.dispose()
         self.currentRequestDisposable.dispose()
         self.onlineTimer?.invalidate()
+        self.offlineAfterMessageTimer?.invalidate()
+        if let observer = self.settingsNotificationObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = self.messageSentNotificationObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
+    private func settingsChanged() {
+        if RayGramSettings.ghostOnline {
+            self.onlineTimer?.invalidate()
+            self.onlineTimer = nil
+            if self.isOnlineOnServer {
+                self.isOnlineOnServer = false
+                self.sendOfflineRequest()
+            }
+        } else {
+            if self.wasOnline && !self.isOnlineOnServer {
+                self.updatePresence(true)
+            }
+        }
+    }
+    
+    private func onMessageSent() {
+        if RayGramSettings.ghostOnline {
+            self.offlineAfterMessageTimer?.invalidate()
+            let timer = SignalKitTimer(timeout: 1.5, repeat: false, completion: { [weak self] in
+                guard let strongSelf = self else { return }
+                if RayGramSettings.ghostOnline {
+                    strongSelf.sendOfflineRequest()
+                }
+            }, queue: self.queue)
+            self.offlineAfterMessageTimer = timer
+            timer.start()
+        }
     }
     
     private func updatePresence(_ isOnline: Bool) {
-        let request: Signal<Api.Bool, MTRpcError>
         if isOnline {
-            let timer = SignalKitTimer(timeout: 30.0, repeat: false, completion: { [weak self] in
-                guard let strongSelf = self else {
-                    return
+            if RayGramSettings.ghostOnline {
+                self.onlineTimer?.invalidate()
+                self.onlineTimer = nil
+                if self.isOnlineOnServer {
+                    self.isOnlineOnServer = false
+                    self.sendOfflineRequest()
                 }
-                strongSelf.updatePresence(true)
-            }, queue: self.queue)
-            self.onlineTimer = timer
-            timer.start()
-            request = self.network.request(Api.functions.account.updateStatus(offline: .boolFalse))
+            } else {
+                self.isOnlineOnServer = true
+                let timer = SignalKitTimer(timeout: 30.0, repeat: false, completion: { [weak self] in
+                    guard let strongSelf = self else {
+                        return
+                    }
+                    strongSelf.updatePresence(true)
+                }, queue: self.queue)
+                self.onlineTimer = timer
+                timer.start()
+                self.sendOnlineRequest()
+            }
         } else {
             self.onlineTimer?.invalidate()
             self.onlineTimer = nil
-            request = self.network.request(Api.functions.account.updateStatus(offline: .boolTrue))
+            self.offlineAfterMessageTimer?.invalidate()
+            self.offlineAfterMessageTimer = nil
+            if RayGramSettings.ghostOnline {
+                if self.isOnlineOnServer {
+                    self.isOnlineOnServer = false
+                    self.sendOfflineRequest()
+                }
+            } else {
+                self.isOnlineOnServer = false
+                self.sendOfflineRequest()
+            }
         }
+    }
+    
+    private func sendOnlineRequest() {
+        let request: Signal<Api.Bool, MTRpcError> = self.network.request(Api.functions.account.updateStatus(offline: .boolFalse))
+        self.isPerformingUpdate.set(true)
+        self.currentRequestDisposable.set((request
+        |> `catch` { _ -> Signal<Api.Bool, NoError> in
+            return .single(.boolFalse)
+        }
+        |> deliverOn(self.queue)).start(completed: { [weak self] in
+            guard let strongSelf = self else {
+                return
+            }
+            strongSelf.isPerformingUpdate.set(false)
+        }))
+    }
+    
+    private func sendOfflineRequest() {
+        let request: Signal<Api.Bool, MTRpcError> = self.network.request(Api.functions.account.updateStatus(offline: .boolTrue))
         self.isPerformingUpdate.set(true)
         self.currentRequestDisposable.set((request
         |> `catch` { _ -> Signal<Api.Bool, NoError> in
