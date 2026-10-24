@@ -151,7 +151,7 @@ def load_codesigning_data_from_git(working_dir, repo_url, temp_key_path, branch,
     decrypt_codesigning_directory_recursively(encrypted_working_dir + '/certs', decrypted_working_dir + '/certs', password)
 
 
-def copy_profiles_from_directory(source_path, destination_path, team_id, bundle_id):
+def copy_profiles_from_directory(source_path, destination_path, team_id, bundle_id, certs_path=None):
     profile_name_mapping = {
         '.SiriIntents': 'Intents',
         '.NotificationContent': 'NotificationContent',
@@ -164,6 +164,7 @@ def copy_profiles_from_directory(source_path, destination_path, team_id, bundle_
         '.BroadcastUpload': 'BroadcastUpload'
     }
 
+    matched_any = False
     for file_name in os.listdir(source_path):
         file_path = source_path + '/' + file_name
         if os.path.isfile(file_path):
@@ -187,8 +188,47 @@ def copy_profiles_from_directory(source_path, destination_path, team_id, bundle_
                 profile_base_name = profile_name[len(team_id + '.' + bundle_id):]
                 if profile_base_name in profile_name_mapping:
                     shutil.copyfile(file_path, destination_path + '/' + profile_name_mapping[profile_base_name] + '.mobileprovision')
+                    matched_any = True
                 else:
                     print('Warning: skipping provisioning profile at {} with bundle_id {} (base_name {})'.format(file_path, profile_name, profile_base_name))
+
+    if not matched_any and certs_path and os.path.exists(certs_path + '/SelfSigned.p12'):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            key_pem = os.path.join(tmp_dir, 'fake_key.pem')
+            cert_pem = os.path.join(tmp_dir, 'fake_cert.pem')
+            p12_path = certs_path + '/SelfSigned.p12'
+            run_executable_with_output('openssl', ['pkcs12', '-legacy', '-in', p12_path, '-passin', 'pass:', '-nodes', '-nocerts', '-out', key_pem], check_result=False)
+            if not os.path.exists(key_pem):
+                run_executable_with_output('openssl', ['pkcs12', '-in', p12_path, '-passin', 'pass:', '-nodes', '-nocerts', '-out', key_pem], check_result=True)
+            run_executable_with_output('openssl', ['pkcs12', '-legacy', '-in', p12_path, '-passin', 'pass:', '-nokeys', '-out', cert_pem], check_result=False)
+            if not os.path.exists(cert_pem):
+                run_executable_with_output('openssl', ['pkcs12', '-in', p12_path, '-passin', 'pass:', '-nokeys', '-out', cert_pem], check_result=True)
+
+            for file_name in os.listdir(source_path):
+                if not file_name.endswith('.mobileprovision'):
+                    continue
+                src_file = os.path.join(source_path, file_name)
+                try:
+                    plist_text = run_executable_with_output('security', ['cms', '-D', '-i', src_file], check_result=True)
+                except Exception:
+                    profile_data = run_executable_with_output('openssl', ['smime', '-inform', 'der', '-verify', '-noverify', '-in', src_file], decode=False, stderr_to_stdout=False, check_result=True)
+                    plist_text = profile_data.decode('utf-8', errors='replace')
+                plist_text = plist_text.replace('ph.telegra.Telegraph', bundle_id)
+                tmp_plist = os.path.join(tmp_dir, 'temp.plist')
+                with open(tmp_plist, 'w', encoding='utf-8') as f:
+                    f.write(plist_text)
+
+                profile_dict = plistlib.loads(plist_text.encode('utf-8'))
+                prof_name = profile_dict['Entitlements']['application-identifier']
+                if prof_name.startswith(team_id + '.' + bundle_id):
+                    base_name = prof_name[len(team_id + '.' + bundle_id):]
+                    if base_name in profile_name_mapping:
+                        target_file = os.path.join(destination_path, profile_name_mapping[base_name] + '.mobileprovision')
+                        run_executable_with_output('openssl', [
+                            'smime', '-sign', '-in', tmp_plist, '-out', target_file,
+                            '-signer', cert_pem, '-inkey', key_pem, '-outform', 'DER', '-nodetach'
+                        ], check_result=True)
 
 
 def resolve_aps_environment_from_directory(source_path, team_id, bundle_id):
@@ -218,7 +258,7 @@ def resolve_aps_environment_from_directory(source_path, team_id, bundle_id):
                         print('Provisioning profile at {} does not include an aps-environment entitlement'.format(file_path))
                         sys.exit(1)
                     return profile_dict['Entitlements']['aps-environment']
-    return None
+    return "production"
 
 
 def copy_certificates_from_directory(source_path, destination_path):
@@ -309,7 +349,7 @@ class DirectoryCodesigningSource(CodesigningSource):
         pass
 
     def copy_profiles_to_destination(self, destination_path):
-        copy_profiles_from_directory(source_path=self.directory_path + '/profiles', destination_path=destination_path, team_id=self.team_id, bundle_id=self.bundle_id)
+        copy_profiles_from_directory(source_path=self.directory_path + '/profiles', destination_path=destination_path, team_id=self.team_id, bundle_id=self.bundle_id, certs_path=self.directory_path + '/certs')
 
     def resolve_aps_environment(self):
         return resolve_aps_environment_from_directory(source_path=self.directory_path + '/profiles', team_id=self.team_id, bundle_id=self.bundle_id)

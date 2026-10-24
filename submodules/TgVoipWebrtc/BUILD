@@ -52,6 +52,7 @@ set -e
 SDK_CLANG="$(execpath {sdk}//:bin/clang++)"
 SDK_DIR="$$(cd "$$(dirname "$$SDK_CLANG")/.." && pwd)"
 "$$SDK_CLANG" --target=wasm32-wasip1 --sysroot="$$SDK_DIR/share/wasi-sysroot" \\
+    -isystem "$$SDK_DIR/share/wasi-sysroot/include/wasm32-wasip1/noeh/c++/v1" \\
     -std=c++17 -Oz -flto -fno-exceptions -fno-rtti \\
     -mexec-model=reactor -Wl,--no-entry,--strip-all \\
     -Isubmodules/TgVoipWebrtc/tgcalls/tgcalls \\

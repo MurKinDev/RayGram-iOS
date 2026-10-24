@@ -3107,6 +3107,9 @@ objc_library(
         "webrtc/sdk/" + path for path in ios_objcpp_sources ] + [
         "webrtc/rtc_base/system/gcd_helpers.m",
     ],
+    hdrs = [
+        "webrtc/" + x for x in webrtc_headers
+    ],
     copts = [
         "-w",
         "-Ithird-party/webrtc/webrtc/",
@@ -3249,8 +3252,7 @@ objc_library(
         "webrtc/rtc_base/system/cocoa_threading.mm",
     ],
     hdrs = [
-        "webrtc/rtc_base/system/gcd_helpers.h",
-        "webrtc/rtc_base/system/cocoa_threading.h",
+        "webrtc/" + x for x in webrtc_headers
     ],
     copts = [
         "-w",

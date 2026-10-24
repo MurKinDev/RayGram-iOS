@@ -267,12 +267,12 @@ genrule(
 
         FFMPEG_VERSION="8.1.2"
 
-        if [ "$(TARGET_CPU)" == "ios_arm64" ]; then
+        if [ "$(TARGET_CPU)" == "ios_arm64" ] || [[ "$$ABS_RULEDIR" == *"ios_arm64"* ]] || [[ "$$ABS_RULEDIR" == *"ios-arm64"* ]]; then
             BUILD_ARCH="arm64"
-        elif [ "$(TARGET_CPU)" == "ios_sim_arm64" ]; then
+        elif [ "$(TARGET_CPU)" == "ios_sim_arm64" ] || [[ "$$ABS_RULEDIR" == *"ios_sim_arm64"* ]] || [[ "$$ABS_RULEDIR" == *"ios-sim_arm64"* ]]; then
             BUILD_ARCH="sim_arm64"
             VARIANT="debug"
-        elif [ "$(TARGET_CPU)" == "darwin_arm64" ]; then
+        elif [ "$(TARGET_CPU)" == "darwin_arm64" ] || [ "$$(uname -s)" == "Darwin" ]; then
             BUILD_ARCH="macos_arm64"
             VARIANT="debug"
         elif [ "$(TARGET_CPU)" == "k8" ] || [ "$(TARGET_CPU)" == "x86_64" ]; then

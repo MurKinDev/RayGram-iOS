@@ -2,9 +2,11 @@
 
 ## 🚀 Статус проекта
 - **Версия:** 13.0
-- **Текущий билд:** 35322 (Release)
-- **База:** Telegram-iOS 13.0 (ARM64, Swift / Objective-C / C++, Bazel)
+- **Текущий билд:** 35333 (Release)
+- **Bundle ID:** `app.raygram.ios`
+- **База:** Telegram-iOS 13.0 (ARM64, Swift / Objective-C / C++, Bazel 9)
 - **Иконка и брендинг:** RayGram (стилизованный белый самолётик в стиле ray-desk на чёрном фоне)
+- **Среда сборки:** Локальная на Apple Silicon (MacBook Air M3, ~30 сек инкрементальный билд) + GitHub Actions CI
 
 ---
 
@@ -12,6 +14,7 @@
 
 ### Брендинг и интерфейс
 - [x] **Имя приложения «RayGram»** на домашнем экране iOS (`CFBundleDisplayName = "RayGram"` во всех локализациях).
+- [x] **Кастомный Bundle ID (`app.raygram.ios`)**: независимая установка параллельно с официальным Telegram.
 - [x] **Кастомная иконка приложения** в стиле ray-desk (обновлённый увеличенный логотип, нативный iOS 18 Composer Icon `.icon` + ассеты `.xcassets` и `alticon`).
 - [x] **Экран настроек «RayGram»** в основном меню настроек Telegram.
 
@@ -52,6 +55,18 @@
   - Открытие интерактивного 3D просмотрщика `GiftViewScreen` при тапе на подарок (вращение 3D-модели, атрибуты, редкость, дата, получатель и отправитель).
   - Кнопка «✨ Отправить фейк подарок» в меню отправки подарков (`GiftOptionsScreen`).
   - Тумблер «Enable Fake Gifts» в настройках RayGram.
+
+### Инфраструктура и сборка (Build & DevOps)
+- [x] **Локальная сборка на Apple Silicon (MacBook Air M3)**:
+  - Настройка Bazel 9 под ARM64 с поддержкой darwin-sandbox.
+  - Исправление детекции архитектур и путей компилятора во всех C/C++ и WASM библиотеках (`ffmpeg`, `webrtc`, `TgVoipWebrtc`, `td`, `opus`, `libvpx`, `dav1d`, `libjxl`, `mozjpeg`, `webp`).
+  - Ограничение ресурсов (`jobs=4`, RAM 8GB) для холодного хода без перегрева ноутбука.
+  - Рекордная скорость инкрементального билда релизного `.ipa`: **30 секунд** из локального кэша вместо 60+ минут на GitHub Actions.
+- [x] **Кастомный Bundle ID (`app.raygram.ios`)**:
+  - Динамическое переподписание (re-signing) профилей провижининга для всех расширений приложения (Widget, Share, Intents, NotificationService, NotificationContent, BroadcastUpload).
+  - Автоматическая генерация `RayGram.ipa` и `Telegram.ipa`.
+- [x] **Исправление чёрного экрана при первом запуске (Black Screen on Launch Fix)**:
+  - Корректная конфигурация entitlements, app-groups и профилей провижининга при установке через sideloading (без зависаний и вылетов на сплэш-скрине).
 
 ---
 

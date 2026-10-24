@@ -49,6 +49,7 @@ submodules/MtProtoKit/TON/macOS/lib/fift/Lisp.fif
 submodules/MtProtoKit/TON/macOS/lib/fift/Lists.fif
 submodules/MtProtoKit/TON/macOS/lib/fift/Stack.fif
 submodules/MtProtoKit/TON/macOS/lib/fift/TonUtil.fif
+bazel-*
 bazel-bin
 bazel-bin/*
 bazel-genfiles
@@ -60,6 +61,7 @@ bazel-telegram-ios/*
 bazel-testlogs
 bazel-testlogs/*
 xcodeproj.bazelrc
+.bazelrc
 */*.swp
 *.swp
 build-input/*

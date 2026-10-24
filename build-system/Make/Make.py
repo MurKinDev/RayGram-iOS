@@ -710,6 +710,7 @@ def build(bazel, arguments):
             print('Multiple matching IPA files found: {}'.format(ipa_paths))
             sys.exit(1)
         shutil.copyfile(ipa_paths[0], artifacts_path + '/Telegram.ipa')
+        shutil.copyfile(ipa_paths[0], artifacts_path + '/RayGram.ipa')
 
         dsym_paths = glob.glob('bazel-bin/Telegram/*.dSYM')
         for dsym_path in dsym_paths:
