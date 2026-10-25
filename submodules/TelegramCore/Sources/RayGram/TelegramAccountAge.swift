@@ -82,11 +82,14 @@ public final class TelegramAccountAge {
         (8_000_000_000, 2025, 3),
         (8_200_000_000, 2025, 6),
         (8_350_000_000, 2025, 8),
-        (8_550_000_000, 2025, 11),
-        (8_700_000_000, 2026, 1),
-        (8_900_000_000, 2026, 4),
-        (9_150_000_000, 2026, 7),
-        (9_400_000_000, 2026, 10),
+        (8_560_000_000, 2025, 11),
+        (8_630_000_000, 2026, 1),
+        (8_700_000_000, 2026, 3),
+        (8_770_000_000, 2026, 5),
+        (8_840_000_000, 2026, 8),
+        (8_880_000_000, 2026, 9),
+        (8_920_000_000, 2026, 10),
+        (8_960_000_000, 2026, 11),
     ]
     
     private static func dateFor(year: Int, month: Int) -> Date {
@@ -129,11 +132,11 @@ public final class TelegramAccountAge {
             }
         }
         
-        // If beyond last milestone, extrapolate with recent rate (~80M IDs per month)
+        // If beyond last milestone, extrapolate with recent rate (~35M IDs per month)
         let last = milestones[count - 1]
         let lastDate = dateFor(year: last.year, month: last.month)
         let extraIds = Double(userId - last.id)
-        let extraSeconds = (extraIds / 80_000_000.0) * (30.44 * 86400.0)
+        let extraSeconds = (extraIds / 35_000_000.0) * (30.44 * 86400.0)
         return lastDate.addingTimeInterval(extraSeconds)
     }
     
