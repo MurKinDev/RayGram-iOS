@@ -803,6 +803,10 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
         canReply = false
     }
     
+    if messages[0].isDeleted {
+        canPin = false
+    }
+    
     if let peer = messages[0].peers[messages[0].id.peerId] {
         if peer.isDeleted {
             canPin = false
@@ -2866,6 +2870,10 @@ func chatAvailableMessageActionsImpl(engine: TelegramEngine, accountPeerId: Engi
                 } else {
                     optionsMap[id]!.insert(.deleteLocally)
                 }
+                
+                if message.isDeleted {
+                    optionsMap[id]!.insert(.deleteLocally)
+                }
             }
             
             if !isShareProtected && !isExternalShareProtected {
@@ -2880,6 +2888,15 @@ func chatAvailableMessageActionsImpl(engine: TelegramEngine, accountPeerId: Engi
             }
             if hadPersonalIncoming && optionsMap.values.contains(where: { $0.contains(.deleteGlobally) }) && !reducedOptions.contains(.deleteGlobally) {
                 reducedOptions.insert(.unsendPersonal)
+            }
+            
+            let allMessagesDeleted = !messageIds.isEmpty && messageIds.allSatisfy { id in
+                getMessage(id)?.isDeleted ?? false
+            }
+            if allMessagesDeleted {
+                reducedOptions.remove(.deleteGlobally)
+                reducedOptions.remove(.unsendPersonal)
+                reducedOptions.insert(.deleteLocally)
             }
             
             if !isPremium {

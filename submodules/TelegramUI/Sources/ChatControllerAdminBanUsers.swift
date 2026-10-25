@@ -598,13 +598,16 @@ extension ChatControllerImpl {
             }
             
             var unsendPersonalMessages = false
-            if options.contains(.unsendPersonal) {
+            let allMessagesDeleted = !messages.isEmpty && messages.values.allSatisfy { message in
+                message?._asMessage().isDeleted ?? false
+            }
+            if options.contains(.unsendPersonal) && !allMessagesDeleted {
                 canDisplayContextMenu = false
                 items.append(ActionSheetTextItem(title: self.presentationData.strings.Chat_UnsendMyMessagesAlertTitle(personalPeerName ?? "").string))
                 items.append(ActionSheetSwitchItem(title: self.presentationData.strings.Chat_UnsendMyMessages, isOn: false, action: { value in
                     unsendPersonalMessages = value
                 }))
-            } else if options.contains(.deleteGlobally) {
+            } else if options.contains(.deleteGlobally) && !allMessagesDeleted {
                 let globalTitle: String
                 if isChannel {
                     globalTitle = self.presentationData.strings.Conversation_DeleteMessagesForEveryone
@@ -667,7 +670,7 @@ extension ChatControllerImpl {
                     }
                 }))
             }
-            if options.contains(.deleteLocally) {
+            if options.contains(.deleteLocally) || allMessagesDeleted {
                 var localOptionText = self.presentationData.strings.Conversation_DeleteMessagesForMe
                 if self.chatLocation.peerId == self.context.account.peerId {
                     if case .scheduledMessages = self.presentationInterfaceState.subject {
@@ -680,7 +683,7 @@ extension ChatControllerImpl {
                 } else if case .scheduledMessages = self.presentationInterfaceState.subject {
                     localOptionText = messageIds.count > 1 ? self.presentationData.strings.ScheduledMessages_DeleteMany : self.presentationData.strings.ScheduledMessages_Delete
                 } else {
-                    if options.contains(.unsendPersonal) {
+                    if options.contains(.unsendPersonal) && !allMessagesDeleted {
                         localOptionText = self.presentationData.strings.Chat_DeleteMessagesConfirmation(Int32(messageIds.count))
                     } else if case .peer(self.context.account.peerId) = self.chatLocation {
                         if messageIds.count == 1 {

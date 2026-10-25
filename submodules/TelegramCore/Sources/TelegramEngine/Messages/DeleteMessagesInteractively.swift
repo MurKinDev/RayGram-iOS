@@ -117,7 +117,7 @@ func deleteMessagesInteractively(transaction: Transaction, stateManager: Account
             if id.namespace == Namespaces.Message.EphemeralLocal || Namespaces.Message.allWelcomeMessages.contains(id.namespace) {
                 continue
             }
-            if let message = transaction.getMessage(id) {
+            if let message = transaction.getMessage(id), !message.isDeleted {
                 for attribute in message.attributes {
                     if let attribute = attribute as? OutgoingMessageInfoAttribute {
                         uniqueIds[attribute.uniqueId] = peerId
@@ -129,6 +129,9 @@ func deleteMessagesInteractively(transaction: Transaction, stateManager: Account
         if peerId.namespace == Namespaces.Peer.CloudChannel || peerId.namespace == Namespaces.Peer.CloudGroup || peerId.namespace == Namespaces.Peer.CloudUser {
             let remoteMessageIds = peerMessageIds.filter { id in
                 if id.namespace == Namespaces.Message.Local || id.namespace == Namespaces.Message.ScheduledLocal || id.namespace == Namespaces.Message.QuickReplyLocal || id.namespace == Namespaces.Message.EphemeralLocal || Namespaces.Message.allWelcomeMessages.contains(id.namespace) {
+                    return false
+                }
+                if let message = transaction.getMessage(id), message.isDeleted {
                     return false
                 }
                 return true
@@ -151,7 +154,9 @@ func deleteMessagesInteractively(transaction: Transaction, stateManager: Account
                     var globallyUniqueIds: [Int64] = []
                     for messageId in peerMessageIds {
                         if let message = transaction.getMessage(messageId), let globallyUniqueId = message.globallyUniqueId {
-                            globallyUniqueIds.append(globallyUniqueId)
+                            if !message.isDeleted {
+                                globallyUniqueIds.append(globallyUniqueId)
+                            }
                         }
                     }
                     let updatedState = addSecretChatOutgoingOperation(transaction: transaction, peerId: peerId, operation: SecretChatOutgoingOperationContents.deleteMessages(layer: layer, actionGloballyUniqueId: Int64.random(in: Int64.min ... Int64.max), globallyUniqueIds: globallyUniqueIds), state: state)
