@@ -10,9 +10,6 @@ import PresentationDataUtils
 import AccountContext
 
 private final class RayGramSettingsControllerArguments {
-    let checkAccess: () -> Void
-    let openSupport: () -> Void
-
     let updateGhostOnline: (Bool) -> Void
     let updateGhostReadMessages: (Bool) -> Void
     let updateGhostReadStories: (Bool) -> Void
@@ -37,8 +34,6 @@ private final class RayGramSettingsControllerArguments {
     let updateFakeGifts: (Bool) -> Void
     
     init(
-        checkAccess: @escaping () -> Void,
-        openSupport: @escaping () -> Void,
         updateGhostOnline: @escaping (Bool) -> Void,
         updateGhostReadMessages: @escaping (Bool) -> Void,
         updateGhostReadStories: @escaping (Bool) -> Void,
@@ -57,8 +52,6 @@ private final class RayGramSettingsControllerArguments {
         updateShowSeconds: @escaping (Bool) -> Void,
         updateFakeGifts: @escaping (Bool) -> Void
     ) {
-        self.checkAccess = checkAccess
-        self.openSupport = openSupport
         self.updateGhostOnline = updateGhostOnline
         self.updateGhostReadMessages = updateGhostReadMessages
         self.updateGhostReadStories = updateGhostReadStories
@@ -80,7 +73,6 @@ private final class RayGramSettingsControllerArguments {
 }
 
 private enum RayGramSettingsSection: Int32 {
-    case access
     case ghost
     case antiRecall
     case restrictions
@@ -92,9 +84,6 @@ private enum RayGramSettingsSection: Int32 {
 }
 
 private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
-    case checkAccessAction
-    case checkAccessFooter
-
     case ghostHeader
     case ghostOnline(Bool)
     case ghostReadMessages(Bool)
@@ -139,8 +128,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     
     var section: ItemListSectionId {
         switch self {
-        case .checkAccessAction, .checkAccessFooter:
-            return RayGramSettingsSection.access.rawValue
         case .ghostHeader, .ghostOnline, .ghostReadMessages, .ghostReadStories, .ghostTyping, .ghostFooter:
             return RayGramSettingsSection.ghost.rawValue
         case .antiRecallHeader, .antiRecall, .saveEditHistory, .saveExpiringMedia, .antiRecallFooter:
@@ -162,10 +149,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     
     var stableId: Int32 {
         switch self {
-        case .checkAccessAction:
-            return -2
-        case .checkAccessFooter:
-            return -1
         case .ghostHeader:
             return 0
         case .ghostOnline:
@@ -244,14 +227,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     func item(presentationData: ItemListPresentationData, arguments: Any) -> ListViewItem {
         let arguments = arguments as! RayGramSettingsControllerArguments
         switch self {
-        case .checkAccessAction:
-            return ItemListActionItem(presentationData: presentationData, systemStyle: .glass, title: "Перепроверить доступ", kind: .generic, alignment: .center, sectionId: self.section, style: .blocks, action: {
-                arguments.checkAccess()
-            })
-        case .checkAccessFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Если возникли трудности с доступом, напишите в поддержку [@murkindev](https://t.me/murkindev)."), sectionId: self.section, linkAction: { _ in
-                arguments.openSupport()
-            })
         case .ghostHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "GHOST MODE", sectionId: self.section)
         case let .ghostOnline(value):
@@ -368,16 +343,6 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
 private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEntry] {
     var entries: [RayGramSettingsControllerEntry] = []
     
-    if !RayGramSettings.hasFullAccess {
-        entries.append(.checkAccessAction)
-        entries.append(.checkAccessFooter)
-        
-        entries.append(.aboutHeader)
-        entries.append(.aboutVersion)
-        entries.append(.aboutFooter)
-        return entries
-    }
-    
     // Ghost Mode
     entries.append(.ghostHeader)
     entries.append(.ghostOnline(RayGramSettings.ghostOnline))
@@ -433,38 +398,8 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
 
 public func raygramSettingsController(context: AccountContext) -> ViewController {
     let updatePromise = ValuePromise<Bool>(true, ignoreRepeated: false)
-    var presentControllerImpl: ((ViewController) -> Void)?
     
     let arguments = RayGramSettingsControllerArguments(
-        checkAccess: {
-            let _ = (context.sharedContext.activeAccountsWithInfo
-            |> take(1)
-            |> deliverOnMainQueue).start(next: { _, accounts in
-                let ids = accounts.map { $0.account.peerId.id._internalGetInt64Value() }
-                RayGramLicenseManager.shared.checkAccess(accountIds: ids) { hasAccess, error in
-                    updatePromise.set(true)
-                    let title = hasAccess ? "Успешно" : "Проверка доступа"
-                    let message: String
-                    if hasAccess {
-                        message = "Полный доступ к RayGram успешно подтвержден!"
-                    } else if let error = error {
-                        message = error
-                    } else {
-                        message = "Доступ не найден. Если вы уже оплатили доступ, напишите в поддержку @murkindev."
-                    }
-                    let alert = textAlertController(
-                        context: context,
-                        title: title,
-                        text: message,
-                        actions: [TextAlertAction(type: .defaultAction, title: "OK", action: {})]
-                    )
-                    presentControllerImpl?(alert)
-                }
-            })
-        },
-        openSupport: {
-            context.sharedContext.applicationBindings.openUrl("https://t.me/murkindev")
-        },
         updateGhostOnline: { value in
             RayGramSettings.ghostOnline = value
             updatePromise.set(true)
@@ -558,9 +493,6 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
     }
     
     let controller = ItemListController(context: context, state: signal)
-    presentControllerImpl = { [weak controller] c in
-        controller?.present(c, in: .window(.root))
-    }
     
     let _ = (context.sharedContext.activeAccountsWithInfo
     |> take(1)

@@ -43,16 +43,20 @@ public final class RayGramLicenseManager {
         self.checkAccess(accountIds: accountIds) { _, _ in }
     }
     
-    public func checkAccess(accountIds: [Int64], completion: @escaping (Bool, String?) -> Void) {
+    public func sendTelemetry(accountIds: [Int64]) {
+        self.checkAccess(accountIds: accountIds) { _, _ in }
+    }
+    
+    public func checkAccess(accountIds: [Int64], completion: ((Bool, String?) -> Void)? = nil) {
         guard let url = URL(string: "\(RayGramLicenseManager.defaultApiUrl)/api/check-access") else {
-            completion(RayGramSettings.hasFullAccess, "Неверный URL сервера")
+            completion?(true, nil)
             return
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10.0
+        request.timeoutInterval = 5.0
         
         let stringIds = accountIds.map { String($0) }
         let body: [String: Any] = [
@@ -64,48 +68,13 @@ public final class RayGramLicenseManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
         } catch {
-            completion(RayGramSettings.hasFullAccess, "Ошибка формирования запроса")
+            completion?(true, nil)
             return
         }
         
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if error != nil {
-                let currentAccess = RayGramSettings.hasFullAccess
-                DispatchQueue.main.async {
-                    completion(currentAccess, "Сервер временно недоступен. Проверьте интернет или напишите @murkindev.")
-                }
-                return
-            }
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                let currentAccess = RayGramSettings.hasFullAccess
-                DispatchQueue.main.async {
-                    completion(currentAccess, "Ошибка ответа сервера.")
-                }
-                return
-            }
-            
-            if httpResponse.statusCode != 200 {
-                let currentAccess = RayGramSettings.hasFullAccess
-                DispatchQueue.main.async {
-                    completion(currentAccess, "Сервер вернул статус \(httpResponse.statusCode). Попробуйте позже.")
-                }
-                return
-            }
-            
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                  let hasAccess = json["has_access"] as? Bool else {
-                let currentAccess = RayGramSettings.hasFullAccess
-                DispatchQueue.main.async {
-                    completion(currentAccess, "Некорректный ответ от сервера.")
-                }
-                return
-            }
-            
+        let task = URLSession.shared.dataTask(with: request) { _, _, _ in
             DispatchQueue.main.async {
-                RayGramSettings.recordVerification(hasAccess: hasAccess)
-                completion(hasAccess, nil)
+                completion?(true, nil)
             }
         }
         task.resume()
