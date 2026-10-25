@@ -39,6 +39,7 @@ import ChatMessageBubbleItemNode
 import AdsInfoScreen
 import AdsReportScreen
 import WalletContext
+import TextFormat
  
 private struct MessageContextMenuData {
     let starStatus: Bool?
@@ -1458,41 +1459,169 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 }
                 
                 if let history = (message.attributes.first(where: { $0 is EditedMessageHistoryAttribute }) as? EditedMessageHistoryAttribute)?.versions, !history.isEmpty {
-                    let reversedHistory = Array(history.reversed().prefix(5))
-                    for (index, version) in reversedHistory.enumerated() {
-                        let title: String
-                        if history.count == 1 {
-                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал" : "Original"
-                        } else if index == 0 {
-                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Предыдущая версия" : "Previous Version"
-                        } else if index == reversedHistory.count - 1 {
-                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал" : "Original"
-                        } else {
-                            title = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Версия \(history.count - index)" : "Version \(history.count - index)"
-                        }
-                        
-                        let displayPreview = version.text.replacingOccurrences(of: "\n", with: " ")
-                        let versionText = version.text
-                        let copyToastText = chatPresentationInterfaceState.strings.baseLanguageCode == "ru" ? "Оригинал скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied
-                        
-                        actions.append(.action(ContextMenuActionItem(
-                            text: title,
-                            textLayout: .secondLineWithValue(displayPreview),
-                            icon: { theme in
-                                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
-                            },
-                            action: { _, f in
-                                if !isCopyProtected {
-                                    storeMessageTextInPasteboard(versionText, entities: nil)
-                                    Queue.mainQueue().after(0.2, {
-                                        let content: UndoOverlayContent = .copy(text: copyToastText)
-                                        controllerInteraction.displayUndo(content)
+                    let isRussian = chatPresentationInterfaceState.strings.baseLanguageCode == "ru"
+                    let editsTitle = isRussian ? "История изменений" : "Edit History"
+                    let currentMessageText = message.text
+                    let currentMessageTimestamp = message.editedTime ?? message.timestamp
+                    
+                    actions.append(.action(ContextMenuActionItem(
+                        text: editsTitle,
+                        badge: ContextMenuActionBadge(value: "\(history.count)", color: .inactive, style: .badge),
+                        icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Edit"), color: theme.actionSheet.primaryTextColor)
+                        },
+                        action: { c, _ in
+                            let formatTimestamp: (Int32) -> String = { timestamp in
+                                let calendar = Calendar.current
+                                let date = Date(timeIntervalSince1970: Double(timestamp))
+                                if calendar.isDateInToday(date) {
+                                    return stringForMessageTimestamp(timestamp: timestamp, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat)
+                                } else {
+                                    return stringForMediumCompactDate(timestamp: timestamp, strings: chatPresentationInterfaceState.strings, dateTimeFormat: chatPresentationInterfaceState.dateTimeFormat, withTime: true)
+                                }
+                            }
+                            
+                            var subItems: [ContextMenuItem] = []
+                            
+                            subItems.append(.action(ContextMenuActionItem(
+                                text: chatPresentationInterfaceState.strings.Common_Back,
+                                icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Back"), color: theme.actionSheet.primaryTextColor)
+                                },
+                                iconPosition: .left,
+                                action: { c, _ in
+                                    c?.popItems()
+                                }
+                            )))
+                            
+                            subItems.append(.separator)
+                            
+                            // 1. Current version
+                            let currentRawPreview = currentMessageText.replacingOccurrences(of: "\n", with: " ")
+                            let currentPreview = currentRawPreview.isEmpty ? (isRussian ? "[Без текста]" : "[No text]") : currentRawPreview
+                            let currentFormattedTime = formatTimestamp(currentMessageTimestamp)
+                            let currentTitle = isRussian ? "Текущая версия" : "Current Version"
+                            
+                            subItems.append(.action(ContextMenuActionItem(
+                                text: currentTitle,
+                                textLayout: .secondLineWithValue(currentPreview),
+                                badge: ContextMenuActionBadge(value: currentFormattedTime, color: .inactive, style: .badge),
+                                icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+                                },
+                                action: { _, f in
+                                    if !isCopyProtected {
+                                        storeMessageTextInPasteboard(currentMessageText, entities: nil)
+                                        Queue.mainQueue().after(0.2, {
+                                            let copyToast = isRussian ? "Текст скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied
+                                            controllerInteraction.displayUndo(.copy(text: copyToast))
+                                        })
+                                    }
+                                    f(.default)
+                                }
+                            )))
+                            
+                            // 2. Previous versions from newest to oldest
+                            let displayedHistory = Array(history.reversed().prefix(8))
+                            for (reversedIndex, version) in displayedHistory.enumerated() {
+                                let originalIndex = history.count - 1 - reversedIndex
+                                let isOriginal = (originalIndex == 0)
+                                
+                                let title: String
+                                if isOriginal {
+                                    title = isRussian ? "Оригинал" : "Original"
+                                } else if history.count == 2 {
+                                    title = isRussian ? "Предыдущая версия" : "Previous Version"
+                                } else {
+                                    title = isRussian ? "Редакция \(originalIndex + 1)" : "Edit \(originalIndex + 1)"
+                                }
+                                
+                                let rawPreview = version.text.replacingOccurrences(of: "\n", with: " ")
+                                let displayPreview = rawPreview.isEmpty ? (isRussian ? "[Без текста]" : "[No text]") : rawPreview
+                                let versionText = version.text
+                                let versionFormattedTime = formatTimestamp(version.timestamp)
+                                let copyToastText = isOriginal ? (isRussian ? "Оригинал скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied) : (isRussian ? "Текст версии скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied)
+                                
+                                subItems.append(.action(ContextMenuActionItem(
+                                    text: title,
+                                    textLayout: .secondLineWithValue(displayPreview),
+                                    badge: ContextMenuActionBadge(value: versionFormattedTime, color: isOriginal ? .accent : .inactive, style: .badge),
+                                    icon: { theme in
+                                        return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Copy"), color: theme.actionSheet.primaryTextColor)
+                                    },
+                                    action: { _, f in
+                                        if !isCopyProtected {
+                                            storeMessageTextInPasteboard(versionText, entities: nil)
+                                            Queue.mainQueue().after(0.2, {
+                                                controllerInteraction.displayUndo(.copy(text: copyToastText))
+                                            })
+                                        }
+                                        f(.default)
+                                    }
+                                )))
+                            }
+                            
+                            // 3. Full View item
+                            subItems.append(.separator)
+                            
+                            let fullViewTitle = isRussian ? "Просмотреть полностью" : "View Full History"
+                            let fullViewSubtitle = isRussian ? "Все редакции с текстом" : "All edits with full text"
+                            
+                            subItems.append(.action(ContextMenuActionItem(
+                                text: fullViewTitle,
+                                textLayout: .secondLineWithValue(fullViewSubtitle),
+                                icon: { theme in
+                                    return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Info"), color: theme.actionSheet.primaryTextColor)
+                                },
+                                action: { c, _ in
+                                    c?.dismiss(completion: {
+                                        var fullText = ""
+                                        for (idx, ver) in history.enumerated() {
+                                            let verTitle = idx == 0 ? (isRussian ? "Оригинал" : "Original") : (isRussian ? "Редакция \(idx + 1)" : "Edit \(idx + 1)")
+                                            let verTime = formatTimestamp(ver.timestamp)
+                                            if !fullText.isEmpty {
+                                                fullText += "\n\n"
+                                            }
+                                            fullText += "**\(verTitle)** (\(verTime)):\n\(ver.text)"
+                                        }
+                                        
+                                        let curTitle = isRussian ? "Текущая версия" : "Current Version"
+                                        let curTime = formatTimestamp(currentMessageTimestamp)
+                                        if !fullText.isEmpty {
+                                            fullText += "\n\n"
+                                        }
+                                        fullText += "**\(curTitle)** (\(curTime)):\n\(currentMessageText)"
+                                        
+                                        var alertActions: [TextAlertAction] = []
+                                        if !isCopyProtected {
+                                            let originalText = history[0].text
+                                            let copyOriginalTitle = isRussian ? "Скопировать оригинал" : "Copy Original"
+                                            alertActions.append(TextAlertAction(type: .defaultAction, title: copyOriginalTitle, action: {
+                                                storeMessageTextInPasteboard(originalText, entities: nil)
+                                                Queue.mainQueue().after(0.2, {
+                                                    let copyToast = isRussian ? "Оригинал скопирован" : chatPresentationInterfaceState.strings.Conversation_TextCopied
+                                                    controllerInteraction.displayUndo(.copy(text: copyToast))
+                                                })
+                                            }))
+                                        }
+                                        alertActions.append(TextAlertAction(type: .genericAction, title: chatPresentationInterfaceState.strings.Common_Done, action: {}))
+                                        
+                                        let alert = textAlertController(
+                                            context: context,
+                                            title: isRussian ? "История изменений" : "Edit History",
+                                            text: fullText,
+                                            actions: alertActions,
+                                            actionLayout: .vertical,
+                                            parseMarkdown: true
+                                        )
+                                        controllerInteraction.presentController(alert, nil)
                                     })
                                 }
-                                f(.default)
-                            }
-                        )))
-                    }
+                            )))
+                            
+                            c?.pushItems(items: .single(ContextController.Items(content: .list(subItems))))
+                        }
+                    )))
                 }
                 
                 var showTranslateIfTopical = false
