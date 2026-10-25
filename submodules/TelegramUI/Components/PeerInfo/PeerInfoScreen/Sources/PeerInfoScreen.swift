@@ -5474,7 +5474,19 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                         contentHeight -= 16.0
                     }
                 }
-                let sectionHeight = sectionNode.update(context: self.context, width: sectionWidth, safeInsets: UIEdgeInsets(), hasCorners: !insets.left.isZero, presentationData: self.presentationData, items: sectionItems, transition: transition)
+                var isLiquidGlass = false
+                if RayGramSettings.liquidGlassProfile {
+                    if let infoSection = sectionId as? InfoSection {
+                        if infoSection == .peerInfo || infoSection == .personalChannel {
+                            isLiquidGlass = true
+                        }
+                    } else if let settingsSection = sectionId as? SettingsSection {
+                        if settingsSection == .myProfile {
+                            isLiquidGlass = true
+                        }
+                    }
+                }
+                let sectionHeight = sectionNode.update(context: self.context, width: sectionWidth, safeInsets: UIEdgeInsets(), hasCorners: !insets.left.isZero, presentationData: self.presentationData, items: sectionItems, isLiquidGlass: isLiquidGlass, transition: transition)
                 let sectionFrame = CGRect(origin: CGPoint(x: insets.left, y: contentHeight), size: CGSize(width: sectionWidth, height: sectionHeight))
                 if additive {
                     transition.updateFrameAdditive(node: sectionNode, frame: sectionFrame)
@@ -5535,7 +5547,19 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 }
                 
                 let sectionWidth = layout.size.width - insets.left - insets.right
-                let sectionHeight = sectionNode.update(context: self.context, width: sectionWidth, safeInsets: UIEdgeInsets(), hasCorners: !insets.left.isZero, presentationData: self.presentationData, items: sectionItems, transition: transition)
+                var isLiquidGlass = false
+                if RayGramSettings.liquidGlassProfile {
+                    if let infoSection = sectionId as? InfoSection {
+                        if infoSection == .peerInfo || infoSection == .personalChannel {
+                            isLiquidGlass = true
+                        }
+                    } else if let settingsSection = sectionId as? SettingsSection {
+                        if settingsSection == .myProfile {
+                            isLiquidGlass = true
+                        }
+                    }
+                }
+                let sectionHeight = sectionNode.update(context: self.context, width: sectionWidth, safeInsets: UIEdgeInsets(), hasCorners: !insets.left.isZero, presentationData: self.presentationData, items: sectionItems, isLiquidGlass: isLiquidGlass, transition: transition)
                 let sectionFrame = CGRect(origin: CGPoint(x: insets.left, y: contentHeight), size: CGSize(width: sectionWidth, height: sectionHeight))
                 
                 if wasAdded {

@@ -32,6 +32,7 @@ public final class RayGramSettings {
         
         static let showUserId = "RayGram_showUserId"
         static let showAccountAge = "RayGram_showAccountAge"
+        static let liquidGlassProfile = "RayGram_liquidGlassProfile"
         
         static let hasFullAccess = "RayGram_hasFullAccess"
         static let lastVerifiedTimestamp = "RayGram_lastVerifiedTimestamp"
@@ -163,5 +164,10 @@ public final class RayGramSettings {
     public static var showAccountAge: Bool {
         get { return hasFullAccess && getBool(key: Keys.showAccountAge, defaultValue: true) }
         set { setBool(key: Keys.showAccountAge, value: newValue) }
+    }
+    
+    public static var liquidGlassProfile: Bool {
+        get { return getBool(key: Keys.liquidGlassProfile, defaultValue: true) }
+        set { setBool(key: Keys.liquidGlassProfile, value: newValue) }
     }
 }

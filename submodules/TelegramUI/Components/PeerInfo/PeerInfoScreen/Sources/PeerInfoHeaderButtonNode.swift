@@ -8,6 +8,8 @@ import Display
 import TelegramPresentationData
 import ComponentFlow
 import LottieComponent
+import GlassBackgroundComponent
+import TelegramCore
 
 enum PeerInfoHeaderButtonKey: Hashable {
     case message
@@ -58,6 +60,7 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
     
     let backgroundContainerView: UIView
     let backgroundView: UIView
+    private var glassBackgroundView: GlassBackgroundView?
     
     init(key: PeerInfoHeaderButtonKey, action: @escaping (PeerInfoHeaderButtonNode, ContextGesture?) -> Void) {
         self.key = key
@@ -315,18 +318,61 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
         
         transition.updateSublayerTransformScale(node: self.contentNode, scale: 1.0 * fraction + 0.001 * (1.0 - fraction))
         
-        transition.updateCornerRadius(layer: self.backgroundView.layer, cornerRadius: min(16.0, backgroundFrame.height * 0.5))
+        let isLiquidGlass = RayGramSettings.liquidGlassProfile
+        let cornerRadius: CGFloat = isLiquidGlass ? (backgroundFrame.height * 0.5) : min(16.0, backgroundFrame.height * 0.5)
+        
+        transition.updateCornerRadius(layer: self.backgroundView.layer, cornerRadius: cornerRadius)
         // The context source contains only the foreground; its backdrop is a
         // separate shared-blur mask. Match both its rounded shape and its visible
         // bounds, including a partially collapsed header.
-        self.referenceNode.contextMenuSourcePath = UIBezierPath(roundedRect: backgroundFrame, cornerRadius: min(16.0, backgroundFrame.height * 0.5))
-        //self.backgroundNode.update(size: backgroundFrame.size, cornerRadius: min(11.0, backgroundFrame.height * 0.5), transition: transition)
-        //self.backgroundNode.updateColor(color: backgroundColor, transition: transition)
-        transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))
-        if let animatedIconView = self.animatedIcon?.view {
-            transition.updateFrame(view: animatedIconView, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))
+        self.referenceNode.contextMenuSourcePath = UIBezierPath(roundedRect: backgroundFrame, cornerRadius: cornerRadius)
+        
+        if isLiquidGlass {
+            let glassBackgroundView: GlassBackgroundView
+            if let current = self.glassBackgroundView {
+                glassBackgroundView = current
+            } else {
+                glassBackgroundView = GlassBackgroundView()
+                self.glassBackgroundView = glassBackgroundView
+                self.referenceNode.view.insertSubview(glassBackgroundView, at: 0)
+            }
+            glassBackgroundView.isHidden = false
+            let componentTransition = ComponentTransition(transition)
+            componentTransition.setFrame(view: glassBackgroundView, frame: backgroundFrame)
+            let tintKind: GlassBackgroundView.TintColor.Kind
+            if backgroundColor != .clear && backgroundColor != presentationData.theme.list.itemBlocksBackgroundColor {
+                tintKind = .custom(style: .default, color: backgroundColor.withMultipliedAlpha(0.25))
+            } else {
+                tintKind = .panel
+            }
+            glassBackgroundView.update(
+                size: backgroundFrame.size,
+                cornerRadius: cornerRadius,
+                isDark: presentationData.theme.overallDarkAppearance,
+                tintColor: .init(kind: tintKind),
+                isInteractive: false,
+                isVisible: true,
+                transition: componentTransition
+            )
+            
+            self.textNode.isHidden = true
+            let iconY = floorToScreenPixels((size.height - iconSize.height) / 2.0)
+            let iconFrame = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - iconSize.width) / 2.0), y: iconY), size: iconSize)
+            transition.updateFrame(node: self.iconNode, frame: iconFrame)
+            if let animatedIconView = self.animatedIcon?.view {
+                transition.updateFrame(view: animatedIconView, frame: iconFrame)
+            }
+        } else {
+            if let glassBackgroundView = self.glassBackgroundView {
+                glassBackgroundView.isHidden = true
+            }
+            self.textNode.isHidden = false
+            transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))
+            if let animatedIconView = self.animatedIcon?.view {
+                transition.updateFrame(view: animatedIconView, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))
+            }
+            transition.updateFrameAdditiveToCenter(node: self.textNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: size.height - titleSize.height - 9.0), size: titleSize))
         }
-        transition.updateFrameAdditiveToCenter(node: self.textNode, frame: CGRect(origin: CGPoint(x: floor((size.width - titleSize.width) / 2.0), y: size.height - titleSize.height - 9.0), size: titleSize))
         
         self.referenceNode.frame = self.containerNode.bounds
         self.updateContextMenuBackground()

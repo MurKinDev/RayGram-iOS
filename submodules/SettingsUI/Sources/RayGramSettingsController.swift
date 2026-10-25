@@ -30,6 +30,7 @@ private final class RayGramSettingsControllerArguments {
     
     let updateShowUserId: (Bool) -> Void
     let updateShowAccountAge: (Bool) -> Void
+    let updateLiquidGlassProfile: (Bool) -> Void
     
     let updateConfirmCalls: (Bool) -> Void
     let updateShowSeconds: (Bool) -> Void
@@ -51,6 +52,7 @@ private final class RayGramSettingsControllerArguments {
         updateDisableJumpToNextChannel: @escaping (Bool) -> Void,
         updateShowUserId: @escaping (Bool) -> Void,
         updateShowAccountAge: @escaping (Bool) -> Void,
+        updateLiquidGlassProfile: @escaping (Bool) -> Void,
         updateConfirmCalls: @escaping (Bool) -> Void,
         updateShowSeconds: @escaping (Bool) -> Void,
         updateFakeGifts: @escaping (Bool) -> Void
@@ -70,6 +72,7 @@ private final class RayGramSettingsControllerArguments {
         self.updateDisableJumpToNextChannel = updateDisableJumpToNextChannel
         self.updateShowUserId = updateShowUserId
         self.updateShowAccountAge = updateShowAccountAge
+        self.updateLiquidGlassProfile = updateLiquidGlassProfile
         self.updateConfirmCalls = updateConfirmCalls
         self.updateShowSeconds = updateShowSeconds
         self.updateFakeGifts = updateFakeGifts
@@ -116,6 +119,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     case cleanFooter
     
     case profileInfoHeader
+    case liquidGlassProfile(Bool)
     case showUserId(Bool)
     case showAccountAge(Bool)
     case profileInfoFooter
@@ -145,7 +149,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return RayGramSettingsSection.restrictions.rawValue
         case .cleanHeader, .blockSponsoredMessages, .disableSimilarChannels, .disableJumpToNextChannel, .cleanFooter:
             return RayGramSettingsSection.clean.rawValue
-        case .profileInfoHeader, .showUserId, .showAccountAge, .profileInfoFooter:
+        case .profileInfoHeader, .liquidGlassProfile, .showUserId, .showAccountAge, .profileInfoFooter:
             return RayGramSettingsSection.profileInfo.rawValue
         case .qolHeader, .confirmCalls, .showSeconds, .qolFooter:
             return RayGramSettingsSection.qol.rawValue
@@ -202,12 +206,14 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 34
         case .profileInfoHeader:
             return 35
-        case .showUserId:
+        case .liquidGlassProfile:
             return 36
-        case .showAccountAge:
+        case .showUserId:
             return 37
-        case .profileInfoFooter:
+        case .showAccountAge:
             return 38
+        case .profileInfoFooter:
+            return 39
         case .qolHeader:
             return 40
         case .confirmCalls:
@@ -312,6 +318,10 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             
         case .profileInfoHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "PROFILE & INFO", sectionId: self.section)
+        case let .liquidGlassProfile(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Liquid Glass Profile UI", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateLiquidGlassProfile(value)
+            })
         case let .showUserId(value):
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Show Telegram ID", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateShowUserId(value)
@@ -321,7 +331,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
                 arguments.updateShowAccountAge(value)
             })
         case .profileInfoFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Displays Telegram ID and calculates approximate account creation date (отлёга) based on user ID in profiles."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Customizes profile action buttons into round liquid glass buttons with icons only, and applies frosted liquid glass styling to the info and channel sections. Also displays Telegram ID and account creation date."), sectionId: self.section)
             
         case .qolHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "CALLS & TIMESTAMPS", sectionId: self.section)
@@ -397,6 +407,7 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     
     // Profile & Info
     entries.append(.profileInfoHeader)
+    entries.append(.liquidGlassProfile(RayGramSettings.liquidGlassProfile))
     entries.append(.showUserId(RayGramSettings.showUserId))
     entries.append(.showAccountAge(RayGramSettings.showAccountAge))
     entries.append(.profileInfoFooter)
@@ -504,6 +515,10 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateShowAccountAge: { value in
             RayGramSettings.showAccountAge = value
+            updatePromise.set(true)
+        },
+        updateLiquidGlassProfile: { value in
+            RayGramSettings.liquidGlassProfile = value
             updatePromise.set(true)
         },
         updateConfirmCalls: { value in

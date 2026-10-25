@@ -2329,19 +2329,37 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             }
         }
         
-        let buttonWidth = (width - buttonSideInset * 2.0 + buttonSpacing) / CGFloat(buttonKeys.count) - buttonSpacing
-        let buttonSize = CGSize(width: buttonWidth, height: 58.0)
-        var buttonRightOrigin = CGPoint(x: width - buttonSideInset, y: backgroundHeight - bottomInset - 16.0 - buttonSize.height)
-        if !actionButtonKeys.isEmpty {
-            buttonRightOrigin.y += actionButtonSize.height + 24.0
+        let isLiquidGlass = RayGramSettings.liquidGlassProfile
+        let buttonDiameter: CGFloat = 54.0
+        let buttonSize: CGSize
+        var buttonRightOriginY: CGFloat
+
+        if isLiquidGlass {
+            buttonSize = CGSize(width: buttonDiameter, height: buttonDiameter)
+            buttonRightOriginY = backgroundHeight - bottomInset - 16.0 - buttonDiameter
+        } else {
+            let buttonWidth = (width - buttonSideInset * 2.0 + buttonSpacing) / CGFloat(buttonKeys.count) - buttonSpacing
+            buttonSize = CGSize(width: buttonWidth, height: 58.0)
+            buttonRightOriginY = backgroundHeight - bottomInset - 16.0 - buttonSize.height
         }
+        if !actionButtonKeys.isEmpty {
+            buttonRightOriginY += actionButtonSize.height + 24.0
+        }
+        var buttonRightOrigin = CGPoint(x: width - buttonSideInset, y: buttonRightOriginY)
         
         transition.updateFrameAdditive(node: self.buttonsBackgroundNode, frame: CGRect(origin: CGPoint(x: 0.0, y: buttonRightOrigin.y), size: CGSize(width: width, height: buttonSize.height + 40.0)))
         self.buttonsBackgroundNode.update(size: self.buttonsBackgroundNode.bounds.size, transition: transition)
         self.buttonsBackgroundNode.updateColor(color: contentButtonBackgroundColor, enableBlur: true, transition: transition)
-        if isReduceTransparencyEnabled() {
+        if isLiquidGlass {
+            self.buttonsBackgroundNode.alpha = 0.0
+        } else if isReduceTransparencyEnabled() {
             self.buttonsBackgroundNode.alpha = 0.1
+        } else {
+            self.buttonsBackgroundNode.alpha = 1.0
         }
+        
+        let availableWidth = width - buttonSideInset * 2.0
+        let slotWidth = availableWidth / CGFloat(buttonKeys.count)
         
         for buttonKey in buttonKeys.reversed() {
             let buttonNode: PeerInfoHeaderButtonNode
@@ -2359,7 +2377,14 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 buttonNode.contextMenuSourceContainer = self.buttonsContainerNode.view
             }
             
-            let buttonFrame = CGRect(origin: CGPoint(x: buttonRightOrigin.x - buttonSize.width, y: buttonRightOrigin.y), size: buttonSize)
+            let buttonFrame: CGRect
+            if isLiquidGlass {
+                let originalIndex = buttonKeys.firstIndex(of: buttonKey) ?? 0
+                let buttonX = buttonSideInset + CGFloat(originalIndex) * slotWidth + floorToScreenPixels((slotWidth - buttonDiameter) / 2.0)
+                buttonFrame = CGRect(origin: CGPoint(x: buttonX, y: buttonRightOrigin.y), size: buttonSize)
+            } else {
+                buttonFrame = CGRect(origin: CGPoint(x: buttonRightOrigin.x - buttonSize.width, y: buttonRightOrigin.y), size: buttonSize)
+            }
             let buttonTransition: ContainedViewLayoutTransition = wasAdded ? .immediate : transition
             
             if additive {
