@@ -5477,7 +5477,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 var isLiquidGlass = false
                 if RayGramSettings.liquidGlassProfile {
                     if let infoSection = sectionId as? InfoSection {
-                        if infoSection == .peerInfo || infoSection == .personalChannel {
+                        if infoSection == .peerInfo || infoSection == .personalChannel || infoSection == .peerInfoTrailing {
                             isLiquidGlass = true
                         }
                     } else if let settingsSection = sectionId as? SettingsSection {
@@ -5550,7 +5550,7 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 var isLiquidGlass = false
                 if RayGramSettings.liquidGlassProfile {
                     if let infoSection = sectionId as? InfoSection {
-                        if infoSection == .peerInfo || infoSection == .personalChannel {
+                        if infoSection == .peerInfo || infoSection == .personalChannel || infoSection == .peerInfoTrailing {
                             isLiquidGlass = true
                         }
                     } else if let settingsSection = sectionId as? SettingsSection {

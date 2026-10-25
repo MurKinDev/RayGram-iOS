@@ -60,7 +60,7 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
     
     let backgroundContainerView: UIView
     let backgroundView: UIView
-    private var glassBackgroundView: GlassBackgroundView?
+    private var liquidGlassView: PeerInfoLiquidGlassView?
     
     init(key: PeerInfoHeaderButtonKey, action: @escaping (PeerInfoHeaderButtonNode, ContextGesture?) -> Void) {
         self.key = key
@@ -328,31 +328,29 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
         self.referenceNode.contextMenuSourcePath = UIBezierPath(roundedRect: backgroundFrame, cornerRadius: cornerRadius)
         
         if isLiquidGlass {
-            let glassBackgroundView: GlassBackgroundView
-            if let current = self.glassBackgroundView {
-                glassBackgroundView = current
+            let liquidGlassView: PeerInfoLiquidGlassView
+            if let current = self.liquidGlassView {
+                liquidGlassView = current
             } else {
-                glassBackgroundView = GlassBackgroundView()
-                self.glassBackgroundView = glassBackgroundView
-                self.referenceNode.view.insertSubview(glassBackgroundView, at: 0)
+                liquidGlassView = PeerInfoLiquidGlassView()
+                self.liquidGlassView = liquidGlassView
+                self.referenceNode.view.insertSubview(liquidGlassView, at: 0)
             }
-            glassBackgroundView.isHidden = false
-            let componentTransition = ComponentTransition(transition)
-            componentTransition.setFrame(view: glassBackgroundView, frame: backgroundFrame)
-            let tintKind: GlassBackgroundView.TintColor.Kind
+            liquidGlassView.isHidden = false
+            transition.updateFrame(view: liquidGlassView, frame: backgroundFrame)
+            let customTint: UIColor?
             if backgroundColor != .clear && backgroundColor != presentationData.theme.list.itemBlocksBackgroundColor {
-                tintKind = .custom(style: .default, color: backgroundColor.withMultipliedAlpha(0.25))
+                customTint = backgroundColor.withMultipliedAlpha(0.25)
             } else {
-                tintKind = .panel
+                customTint = nil
             }
-            glassBackgroundView.update(
+            liquidGlassView.update(
                 size: backgroundFrame.size,
                 cornerRadius: cornerRadius,
                 isDark: presentationData.theme.overallDarkAppearance,
-                tintColor: .init(kind: tintKind),
-                isInteractive: false,
-                isVisible: true,
-                transition: componentTransition
+                materialKind: .thin,
+                customTintColor: customTint,
+                transition: transition
             )
             
             self.textNode.isHidden = true
@@ -363,8 +361,8 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
                 transition.updateFrame(view: animatedIconView, frame: iconFrame)
             }
         } else {
-            if let glassBackgroundView = self.glassBackgroundView {
-                glassBackgroundView.isHidden = true
+            if let liquidGlassView = self.liquidGlassView {
+                liquidGlassView.isHidden = true
             }
             self.textNode.isHidden = false
             transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))

@@ -13,7 +13,7 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
     private let topSeparatorNode: ASDisplayNode
     private let bottomSeparatorNode: ASDisplayNode
     private let itemContainerNode: ASDisplayNode
-    private var glassBackgroundView: GlassBackgroundView?
+    private var liquidGlassView: PeerInfoLiquidGlassView?
     
     private var currentItems: [PeerInfoScreenItem] = []
     var itemNodes: [AnyHashable: PeerInfoScreenItemNode] = [:]
@@ -137,30 +137,27 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
         let backgroundFrame = CGRect(origin: CGPoint(x: 0.0, y: contentWithBackgroundOffset), size: CGSize(width: width, height: max(0.0, contentWithBackgroundHeight - contentWithBackgroundOffset)))
         
         if isLiquidGlass {
-            let cornerRadius: CGFloat = 16.0
-            let glassBackgroundView: GlassBackgroundView
-            if let current = self.glassBackgroundView {
-                glassBackgroundView = current
+            let cornerRadius: CGFloat = 26.0
+            let liquidGlassView: PeerInfoLiquidGlassView
+            if let current = self.liquidGlassView {
+                liquidGlassView = current
             } else {
-                glassBackgroundView = GlassBackgroundView()
-                self.glassBackgroundView = glassBackgroundView
-                self.view.insertSubview(glassBackgroundView, at: 0)
+                liquidGlassView = PeerInfoLiquidGlassView()
+                self.liquidGlassView = liquidGlassView
+                self.view.insertSubview(liquidGlassView, at: 0)
             }
             if backgroundFrame.height > 0.0 {
-                glassBackgroundView.isHidden = false
-                let componentTransition = ComponentTransition(transition)
-                componentTransition.setFrame(view: glassBackgroundView, frame: backgroundFrame)
-                glassBackgroundView.update(
+                liquidGlassView.isHidden = false
+                transition.updateFrame(view: liquidGlassView, frame: backgroundFrame)
+                liquidGlassView.update(
                     size: backgroundFrame.size,
                     cornerRadius: cornerRadius,
                     isDark: presentationData.theme.overallDarkAppearance,
-                    tintColor: .init(kind: .panel),
-                    isInteractive: false,
-                    isVisible: true,
-                    transition: componentTransition
+                    materialKind: .thin,
+                    transition: transition
                 )
             } else {
-                glassBackgroundView.isHidden = true
+                liquidGlassView.isHidden = true
             }
             
             if hasCorners && backgroundFrame.height > 0.0 {
@@ -177,8 +174,8 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
             }
         } else {
             self.itemContainerNode.layer.mask = nil
-            if let glassBackgroundView = self.glassBackgroundView {
-                glassBackgroundView.isHidden = true
+            if let liquidGlassView = self.liquidGlassView {
+                liquidGlassView.isHidden = true
             }
         }
         
