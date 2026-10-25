@@ -42,6 +42,10 @@ However, **Bazel is a granular graph build system**. Every submodule is an indep
 - **Targeted Bazel compilation is 100% accurate:** It invokes `swiftc` with all dependencies, `-warnings-as-errors`, search paths, and module maps. If it compiles locally, CI will compile it too.
 - **Speed:** Compiles in a few seconds/minutes instead of an hour.
 
+### Build Cadence & Batching:
+- Although local incremental compilation is relatively fast (~3–4 minutes), **do NOT rebuild after every single edit or trivial change**.
+- Batch several related changes/fixes together and run the build once every few changes, or upon completing a logical milestone.
+
 ### How to Run Targeted Compilation:
 
 1. **Find the Bazel target for the modified file:**
@@ -76,7 +80,9 @@ Before creating a git commit or pushing to `origin/master`:
    - Scan all newly introduced symbols, classes, structs, enums, and protocols.
    - Verify every `import` corresponds to a dependency in the target `BUILD` file.
    - Verify every function/initializer call matches the actual signature in the codebase.
-2. **Compile the modified module locally** (following Section 3) whenever significant logic or new dependencies are added.
+2. **Compile locally once every few changes (batching):**
+   - Do not trigger a build on every single trivial edit.
+   - Compile once every few changes or at the completion of a cohesive feature/milestone before pushing to `origin/master`.
 3. **Optional Subagent Cross-Check:**
    - For non-trivial changes, invoke a `research` subagent to act as a strict code reviewer on the diff, specifically auditing:
      - Missing `BUILD` dependencies
