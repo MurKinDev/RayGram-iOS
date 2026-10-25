@@ -124,6 +124,7 @@ func infoItems(
         let ItemPersonalChannel = 2001
         let ItemPhoneNumber = 3000
         let ItemUserId = 3050
+        let ItemAccountAge = 3051
         let ItemUsername = 3001
         let ItemBirthdate = 3002
         let ItemAbout = 3003
@@ -213,25 +214,27 @@ func infoItems(
             }))
         }
         
-        let idString = "\(user.id.id._internalGetInt64Value())"
-        items[currentPeerInfoSection]!.append(
-            PeerInfoScreenLabeledValueItem(
-                id: ItemUserId,
-                label: "ID",
-                text: idString,
-                textColor: .accent,
-                action: { _, _ in
-                    UIPasteboard.general.string = idString
-                    interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
-                },
-                contextAction: { node, gesture, _ in
-                    presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: idString, node: node, gesture: gesture)
-                },
-                requestLayout: { animated in
-                    interaction.requestLayout(animated)
-                }
+        if RayGramSettings.showUserId {
+            let idString = "\(user.id.id._internalGetInt64Value())"
+            items[currentPeerInfoSection]!.append(
+                PeerInfoScreenLabeledValueItem(
+                    id: ItemUserId,
+                    label: "ID",
+                    text: idString,
+                    textColor: .accent,
+                    action: { _, _ in
+                        UIPasteboard.general.string = idString
+                        interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    },
+                    contextAction: { node, gesture, _ in
+                        presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: idString, node: node, gesture: gesture)
+                    },
+                    requestLayout: { animated in
+                        interaction.requestLayout(animated)
+                    }
+                )
             )
-        )
+        }
         
         if let mainUsername = user.addressName {
             var additionalUsernames: String?
@@ -265,6 +268,33 @@ func infoItems(
                     }
                 )
             )
+        }
+        
+        if RayGramSettings.showAccountAge {
+            let userId = user.id.id._internalGetInt64Value()
+            let isRussian = presentationData.strings.baseLanguageCode == "ru"
+            if let ageResult = TelegramAccountAge.calculate(userId: userId, isRussian: isRussian) {
+                let copyText = ageResult.copyText
+                items[currentPeerInfoSection]!.append(
+                    PeerInfoScreenLabeledValueItem(
+                        id: ItemAccountAge,
+                        label: ageResult.label,
+                        text: ageResult.primaryText,
+                        textColor: .primary,
+                        action: { _, _ in
+                            UIPasteboard.general.string = copyText
+                            let toast = isRussian ? "Дата регистрации скопирована" : presentationData.strings.Conversation_TextCopied
+                            interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: toast), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                        },
+                        contextAction: { node, gesture, _ in
+                            presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: copyText, node: node, gesture: gesture)
+                        },
+                        requestLayout: { animated in
+                            interaction.requestLayout(animated)
+                        }
+                    )
+                )
+            }
         }
         
         if let cachedData = data.cachedData as? CachedUserData {
@@ -669,25 +699,27 @@ func infoItems(
                 ))
             }
             
-            let channelIdString = "\(channel.id.id._internalGetInt64Value())"
-            items[currentPeerInfoSection]!.append(
-                PeerInfoScreenLabeledValueItem(
-                    id: ItemChannelId,
-                    label: "ID",
-                    text: channelIdString,
-                    textColor: .accent,
-                    action: { _, _ in
-                        UIPasteboard.general.string = channelIdString
-                        interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
-                    },
-                    contextAction: { node, gesture, _ in
-                        presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: channelIdString, node: node, gesture: gesture)
-                    },
-                    requestLayout: { animated in
-                        interaction.requestLayout(animated)
-                    }
+            if RayGramSettings.showUserId {
+                let channelIdString = "\(channel.id.id._internalGetInt64Value())"
+                items[currentPeerInfoSection]!.append(
+                    PeerInfoScreenLabeledValueItem(
+                        id: ItemChannelId,
+                        label: "ID",
+                        text: channelIdString,
+                        textColor: .accent,
+                        action: { _, _ in
+                            UIPasteboard.general.string = channelIdString
+                            interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                        },
+                        contextAction: { node, gesture, _ in
+                            presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: channelIdString, node: node, gesture: gesture)
+                        },
+                        requestLayout: { animated in
+                            interaction.requestLayout(animated)
+                        }
+                    )
                 )
-            )
+            }
             
             if let mainUsername = channel.addressName {
                 var additionalUsernames: String?
@@ -888,26 +920,28 @@ func infoItems(
             }
         }
     } else if case let .legacyGroup(group) = data.peer {
-        let ItemGroupId = 100
-        let groupIdString = "\(group.id.id._internalGetInt64Value())"
-        items[currentPeerInfoSection]!.append(
-            PeerInfoScreenLabeledValueItem(
-                id: ItemGroupId,
-                label: "ID",
-                text: groupIdString,
-                textColor: .accent,
-                action: { _, _ in
-                    UIPasteboard.general.string = groupIdString
-                    interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
-                },
-                contextAction: { node, gesture, _ in
-                    presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: groupIdString, node: node, gesture: gesture)
-                },
-                requestLayout: { animated in
-                    interaction.requestLayout(animated)
-                }
+        if RayGramSettings.showUserId {
+            let ItemGroupId = 100
+            let groupIdString = "\(group.id.id._internalGetInt64Value())"
+            items[currentPeerInfoSection]!.append(
+                PeerInfoScreenLabeledValueItem(
+                    id: ItemGroupId,
+                    label: "ID",
+                    text: groupIdString,
+                    textColor: .accent,
+                    action: { _, _ in
+                        UIPasteboard.general.string = groupIdString
+                        interaction.getController()?.present(UndoOverlayController(presentationData: presentationData, content: .copy(text: presentationData.strings.Conversation_TextCopied), elevatedLayout: false, animateInAsReplacement: false, action: { _ in return false }), in: .current)
+                    },
+                    contextAction: { node, gesture, _ in
+                        presentIdContextMenu(controller: interaction.getController(), presentationData: presentationData, idString: groupIdString, node: node, gesture: gesture)
+                    },
+                    requestLayout: { animated in
+                        interaction.requestLayout(animated)
+                    }
+                )
             )
-        )
+        }
         
         if let cachedData = data.cachedData as? CachedGroupData {
             let aboutText: String?

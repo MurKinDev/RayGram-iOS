@@ -28,6 +28,9 @@ private final class RayGramSettingsControllerArguments {
     let updateDisableSimilarChannels: (Bool) -> Void
     let updateDisableJumpToNextChannel: (Bool) -> Void
     
+    let updateShowUserId: (Bool) -> Void
+    let updateShowAccountAge: (Bool) -> Void
+    
     let updateConfirmCalls: (Bool) -> Void
     let updateShowSeconds: (Bool) -> Void
     let updateFakeGifts: (Bool) -> Void
@@ -46,6 +49,8 @@ private final class RayGramSettingsControllerArguments {
         updateBlockSponsoredMessages: @escaping (Bool) -> Void,
         updateDisableSimilarChannels: @escaping (Bool) -> Void,
         updateDisableJumpToNextChannel: @escaping (Bool) -> Void,
+        updateShowUserId: @escaping (Bool) -> Void,
+        updateShowAccountAge: @escaping (Bool) -> Void,
         updateConfirmCalls: @escaping (Bool) -> Void,
         updateShowSeconds: @escaping (Bool) -> Void,
         updateFakeGifts: @escaping (Bool) -> Void
@@ -63,6 +68,8 @@ private final class RayGramSettingsControllerArguments {
         self.updateBlockSponsoredMessages = updateBlockSponsoredMessages
         self.updateDisableSimilarChannels = updateDisableSimilarChannels
         self.updateDisableJumpToNextChannel = updateDisableJumpToNextChannel
+        self.updateShowUserId = updateShowUserId
+        self.updateShowAccountAge = updateShowAccountAge
         self.updateConfirmCalls = updateConfirmCalls
         self.updateShowSeconds = updateShowSeconds
         self.updateFakeGifts = updateFakeGifts
@@ -75,6 +82,7 @@ private enum RayGramSettingsSection: Int32 {
     case antiRecall
     case restrictions
     case clean
+    case profileInfo
     case qol
     case fakeGifts
     case about
@@ -107,6 +115,11 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     case disableJumpToNextChannel(Bool)
     case cleanFooter
     
+    case profileInfoHeader
+    case showUserId(Bool)
+    case showAccountAge(Bool)
+    case profileInfoFooter
+    
     case qolHeader
     case confirmCalls(Bool)
     case showSeconds(Bool)
@@ -132,6 +145,8 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return RayGramSettingsSection.restrictions.rawValue
         case .cleanHeader, .blockSponsoredMessages, .disableSimilarChannels, .disableJumpToNextChannel, .cleanFooter:
             return RayGramSettingsSection.clean.rawValue
+        case .profileInfoHeader, .showUserId, .showAccountAge, .profileInfoFooter:
+            return RayGramSettingsSection.profileInfo.rawValue
         case .qolHeader, .confirmCalls, .showSeconds, .qolFooter:
             return RayGramSettingsSection.qol.rawValue
         case .fakeGiftsHeader, .fakeGifts, .fakeGiftsFooter:
@@ -185,6 +200,14 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 33
         case .cleanFooter:
             return 34
+        case .profileInfoHeader:
+            return 35
+        case .showUserId:
+            return 36
+        case .showAccountAge:
+            return 37
+        case .profileInfoFooter:
+            return 38
         case .qolHeader:
             return 40
         case .confirmCalls:
@@ -287,6 +310,19 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
         case .cleanFooter:
             return ItemListTextItem(presentationData: presentationData, text: .markdown("Blocks Telegram sponsored messages, hides recommended channels, and prevents accidental navigation when swiping past the end of a channel."), sectionId: self.section)
             
+        case .profileInfoHeader:
+            return ItemListSectionHeaderItem(presentationData: presentationData, text: "PROFILE & INFO", sectionId: self.section)
+        case let .showUserId(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Show Telegram ID", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateShowUserId(value)
+            })
+        case let .showAccountAge(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Show Account Age (Creation Date)", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateShowAccountAge(value)
+            })
+        case .profileInfoFooter:
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Displays Telegram ID and calculates approximate account creation date (отлёга) based on user ID in profiles."), sectionId: self.section)
+            
         case .qolHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "CALLS & TIMESTAMPS", sectionId: self.section)
         case let .confirmCalls(value):
@@ -358,6 +394,12 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     entries.append(.disableSimilarChannels(RayGramSettings.disableSimilarChannels))
     entries.append(.disableJumpToNextChannel(RayGramSettings.disableJumpToNextChannel))
     entries.append(.cleanFooter)
+    
+    // Profile & Info
+    entries.append(.profileInfoHeader)
+    entries.append(.showUserId(RayGramSettings.showUserId))
+    entries.append(.showAccountAge(RayGramSettings.showAccountAge))
+    entries.append(.profileInfoFooter)
     
     // QoL
     entries.append(.qolHeader)
@@ -454,6 +496,14 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateDisableJumpToNextChannel: { value in
             RayGramSettings.disableJumpToNextChannel = value
+            updatePromise.set(true)
+        },
+        updateShowUserId: { value in
+            RayGramSettings.showUserId = value
+            updatePromise.set(true)
+        },
+        updateShowAccountAge: { value in
+            RayGramSettings.showAccountAge = value
             updatePromise.set(true)
         },
         updateConfirmCalls: { value in

@@ -30,6 +30,9 @@ public final class RayGramSettings {
         
         static let enableFakeGifts = "RayGram_enableFakeGifts"
         
+        static let showUserId = "RayGram_showUserId"
+        static let showAccountAge = "RayGram_showAccountAge"
+        
         static let hasFullAccess = "RayGram_hasFullAccess"
         static let lastVerifiedTimestamp = "RayGram_lastVerifiedTimestamp"
     }
@@ -150,5 +153,15 @@ public final class RayGramSettings {
     public static var enableFakeGifts: Bool {
         get { return hasFullAccess && getBool(key: Keys.enableFakeGifts, defaultValue: true) }
         set { setBool(key: Keys.enableFakeGifts, value: newValue) }
+    }
+    
+    public static var showUserId: Bool {
+        get { return hasFullAccess && getBool(key: Keys.showUserId, defaultValue: true) }
+        set { setBool(key: Keys.showUserId, value: newValue) }
+    }
+    
+    public static var showAccountAge: Bool {
+        get { return hasFullAccess && getBool(key: Keys.showAccountAge, defaultValue: true) }
+        set { setBool(key: Keys.showAccountAge, value: newValue) }
     }
 }
