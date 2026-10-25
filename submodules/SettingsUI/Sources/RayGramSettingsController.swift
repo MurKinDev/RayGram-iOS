@@ -20,6 +20,7 @@ private final class RayGramSettingsControllerArguments {
     let updateSaveExpiringMedia: (Bool) -> Void
     
     let updateBypassNoForwards: (Bool) -> Void
+    let updateBypassSensitiveContent: (Bool) -> Void
     
     let updateBlockSponsoredMessages: (Bool) -> Void
     let updateDisableSimilarChannels: (Bool) -> Void
@@ -42,6 +43,7 @@ private final class RayGramSettingsControllerArguments {
         updateSaveEditHistory: @escaping (Bool) -> Void,
         updateSaveExpiringMedia: @escaping (Bool) -> Void,
         updateBypassNoForwards: @escaping (Bool) -> Void,
+        updateBypassSensitiveContent: @escaping (Bool) -> Void,
         updateBlockSponsoredMessages: @escaping (Bool) -> Void,
         updateDisableSimilarChannels: @escaping (Bool) -> Void,
         updateDisableJumpToNextChannel: @escaping (Bool) -> Void,
@@ -60,6 +62,7 @@ private final class RayGramSettingsControllerArguments {
         self.updateSaveEditHistory = updateSaveEditHistory
         self.updateSaveExpiringMedia = updateSaveExpiringMedia
         self.updateBypassNoForwards = updateBypassNoForwards
+        self.updateBypassSensitiveContent = updateBypassSensitiveContent
         self.updateBlockSponsoredMessages = updateBlockSponsoredMessages
         self.updateDisableSimilarChannels = updateDisableSimilarChannels
         self.updateDisableJumpToNextChannel = updateDisableJumpToNextChannel
@@ -99,6 +102,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
     
     case restrictionsHeader
     case bypassNoForwards(Bool)
+    case bypassSensitiveContent(Bool)
     case restrictionsFooter
     
     case cleanHeader
@@ -132,7 +136,7 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return RayGramSettingsSection.ghost.rawValue
         case .antiRecallHeader, .antiRecall, .saveEditHistory, .saveExpiringMedia, .antiRecallFooter:
             return RayGramSettingsSection.antiRecall.rawValue
-        case .restrictionsHeader, .bypassNoForwards, .restrictionsFooter:
+        case .restrictionsHeader, .bypassNoForwards, .bypassSensitiveContent, .restrictionsFooter:
             return RayGramSettingsSection.restrictions.rawValue
         case .cleanHeader, .blockSponsoredMessages, .disableSimilarChannels, .disableJumpToNextChannel, .cleanFooter:
             return RayGramSettingsSection.clean.rawValue
@@ -175,8 +179,10 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return 20
         case .bypassNoForwards:
             return 21
-        case .restrictionsFooter:
+        case .bypassSensitiveContent:
             return 22
+        case .restrictionsFooter:
+            return 23
         case .cleanHeader:
             return 30
         case .blockSponsoredMessages:
@@ -271,8 +277,12 @@ private enum RayGramSettingsControllerEntry: ItemListNodeEntry {
             return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Bypass Content Protection", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 arguments.updateBypassNoForwards(value)
             })
+        case let .bypassSensitiveContent(value):
+            return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: "Bypass Sensitive Content (18+)", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                arguments.updateBypassSensitiveContent(value)
+            })
         case .restrictionsFooter:
-            return ItemListTextItem(presentationData: presentationData, text: .markdown("Removes restrictions on copying, forwarding, and saving media from channels that disabled forwarding."), sectionId: self.section)
+            return ItemListTextItem(presentationData: presentationData, text: .markdown("Removes restrictions on copying and forwarding, and unlocks channels and media restricted on iOS due to copyright or adult content guidelines."), sectionId: self.section)
             
         case .cleanHeader:
             return ItemListSectionHeaderItem(presentationData: presentationData, text: "CLEAN EXPERIENCE", sectionId: self.section)
@@ -361,6 +371,7 @@ private func raygramSettingsControllerEntries() -> [RayGramSettingsControllerEnt
     // Restrictions
     entries.append(.restrictionsHeader)
     entries.append(.bypassNoForwards(RayGramSettings.bypassNoForwards))
+    entries.append(.bypassSensitiveContent(RayGramSettings.bypassSensitiveContent))
     entries.append(.restrictionsFooter)
     
     // Clean
@@ -430,6 +441,10 @@ public func raygramSettingsController(context: AccountContext) -> ViewController
         },
         updateBypassNoForwards: { value in
             RayGramSettings.bypassNoForwards = value
+            updatePromise.set(true)
+        },
+        updateBypassSensitiveContent: { value in
+            RayGramSettings.bypassSensitiveContent = value
             updatePromise.set(true)
         },
         updateBlockSponsoredMessages: { value in

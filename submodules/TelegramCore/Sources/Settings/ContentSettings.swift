@@ -27,6 +27,11 @@ extension ContentSettings {
                 addContentRestrictionReasons = addContentRestrictionReasonsData
             }
         }
+        if RayGramSettings.bypassSensitiveContent {
+            if !reasons.contains("sensitive") {
+                reasons.append("sensitive")
+            }
+        }
         self.init(ignoreContentRestrictionReasons: Set(reasons), addContentRestrictionReasons: addContentRestrictionReasons)
     }
 }

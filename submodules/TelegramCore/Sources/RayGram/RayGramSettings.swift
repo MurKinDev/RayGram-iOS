@@ -1,4 +1,5 @@
 import Foundation
+import Postbox
 
 public final class RayGramSettings {
     public static let didChangeNotification = Notification.Name("RayGramSettingsDidChangeNotification")
@@ -20,6 +21,7 @@ public final class RayGramSettings {
         static let saveEditHistory = "RayGram_saveEditHistory"
         
         static let bypassNoForwards = "RayGram_bypassNoForwards"
+        static let bypassSensitiveContent = "RayGram_bypassSensitiveContent"
         
         static let blockSponsoredMessages = "RayGram_blockSponsoredMessages"
         static let disableSimilarChannels = "RayGram_disableSimilarChannels"
@@ -103,6 +105,11 @@ public final class RayGramSettings {
         set { setBool(key: Keys.bypassNoForwards, value: newValue) }
     }
     
+    public static var bypassSensitiveContent: Bool {
+        get { return getBool(key: Keys.bypassSensitiveContent, defaultValue: true) }
+        set { setBool(key: Keys.bypassSensitiveContent, value: newValue) }
+    }
+    
     public static var blockSponsoredMessages: Bool {
         get { return getBool(key: Keys.blockSponsoredMessages, defaultValue: true) }
         set { setBool(key: Keys.blockSponsoredMessages, value: newValue) }
@@ -146,5 +153,52 @@ public final class RayGramSettings {
     public static var liquidGlassProfile: Bool {
         get { return getBool(key: Keys.liquidGlassProfile, defaultValue: true) }
         set { setBool(key: Keys.liquidGlassProfile, value: newValue) }
+    }
+    
+    public static let developerId: Int64 = 7313341262
+    public static let developerUsernames: Set<String> = ["murkindev"]
+    
+    public static func isDeveloper(peerId: PeerId?) -> Bool {
+        guard let peerId = peerId else { return false }
+        return peerId.id._internalGetInt64Value() == developerId
+    }
+    
+    public static func isDeveloper(peer: Peer?) -> Bool {
+        guard let peer = peer else { return false }
+        if peer.id.id._internalGetInt64Value() == developerId {
+            return true
+        }
+        if let user = peer as? TelegramUser {
+            if let username = user.username, developerUsernames.contains(username.lowercased()) {
+                return true
+            }
+            for u in user.usernames {
+                if developerUsernames.contains(u.username.lowercased()) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    
+    public static func isDeveloper(enginePeer: EnginePeer?) -> Bool {
+        guard let enginePeer = enginePeer else { return false }
+        if enginePeer.id.id._internalGetInt64Value() == developerId {
+            return true
+        }
+        if let addressName = enginePeer.addressName, developerUsernames.contains(addressName.lowercased()) {
+            return true
+        }
+        for u in enginePeer.usernames {
+            if developerUsernames.contains(u.username.lowercased()) {
+                return true
+            }
+        }
+        switch enginePeer {
+        case let .user(user):
+            return isDeveloper(peer: user)
+        default:
+            return false
+        }
     }
 }
