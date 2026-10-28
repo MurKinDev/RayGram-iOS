@@ -153,7 +153,7 @@ public final class TelegramAccountAge {
         let months = max(0, ageComponents.month ?? 0)
         
         let monthName = isRussian ? russianMonthName(estMonth) : englishMonthName(estMonth)
-        let label = isRussian ? "отлёга" : "account age"
+        let label = isRussian ? "дата регистрации" : "registration date"
         
         let ageCompact: String
         let ageFull: String
@@ -173,8 +173,8 @@ public final class TelegramAccountAge {
                 ageFull = "менее месяца"
             }
             
-            let primaryText = "~\(monthName) \(estYear) (\(ageCompact))"
-            let copyText = "Дата регистрации: ~\(monthName) \(estYear) (отлёга: \(ageFull))"
+            let primaryText = "\(monthName) \(estYear) (\(ageCompact))"
+            let copyText = "Дата регистрации: \(monthName) \(estYear) (\(ageFull))"
             return TelegramAccountAgeResult(primaryText: primaryText, copyText: copyText, label: label)
         } else {
             if years > 0 && months > 0 {
@@ -191,8 +191,8 @@ public final class TelegramAccountAge {
                 ageFull = "less than a month"
             }
             
-            let primaryText = "~\(monthName) \(estYear) (\(ageCompact))"
-            let copyText = "Registration date: ~\(monthName) \(estYear) (account age: \(ageFull))"
+            let primaryText = "\(monthName) \(estYear) (\(ageCompact))"
+            let copyText = "Registration date: \(monthName) \(estYear) (account age: \(ageFull))"
             return TelegramAccountAgeResult(primaryText: primaryText, copyText: copyText, label: label)
         }
     }

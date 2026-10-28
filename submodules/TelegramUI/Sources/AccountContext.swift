@@ -308,7 +308,15 @@ public final class AccountContextImpl: AccountContext {
     private var audioTranscriptionTrialDisposable: Disposable?
     public private(set) var audioTranscriptionTrial: AudioTranscription.TrialState
     
-    public private(set) var isPremium: Bool
+    private var _isPremium: Bool
+    public var isPremium: Bool {
+        get {
+            return self._isPremium || RayGramSettings.localPremium
+        }
+        set {
+            self._isPremium = newValue
+        }
+    }
     
     private var isFrozenDisposable: Disposable?
     public private(set) var isFrozen: Bool
@@ -326,8 +334,9 @@ public final class AccountContextImpl: AccountContext {
         self.userLimits = EngineConfiguration.UserLimits(UserLimitsConfiguration.defaultValue)
         self.peerNameColors = PeerNameColors.with(availableReplyColors: availableReplyColors, availableProfileColors: availableProfileColors)
         self.audioTranscriptionTrial = AudioTranscription.TrialState.defaultValue
-        self.isPremium = false
+        self._isPremium = false
         self.isFrozen = false
+        RayGramSettings.registerAccountPeerId(account.peerId)
         
         self.downloadedMediaStoreManager = DownloadedMediaStoreManagerImpl(postbox: account.postbox, accountManager: sharedContext.accountManager)
         
@@ -576,7 +585,7 @@ public final class AccountContextImpl: AccountContext {
         
         self.userLimitsConfigurationDisposable = (self.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: account.peerId))
         |> mapToSignal { peer -> Signal<(Bool, EngineConfiguration.UserLimits), NoError> in
-            let isPremium = peer?.isPremium ?? false
+            let isPremium = (peer?.isPremium ?? false) || RayGramSettings.localPremium
             return self.engine.data.subscribe(TelegramEngine.EngineData.Item.Configuration.UserLimits(isPremium: isPremium))
             |> map { userLimits in
                 return (isPremium, userLimits)
@@ -586,7 +595,7 @@ public final class AccountContextImpl: AccountContext {
             guard let self = self else {
                 return
             }
-            self.isPremium = isPremium
+            self.isPremium = isPremium || RayGramSettings.localPremium
             self.userLimits = userLimits
         })
         
@@ -603,7 +612,7 @@ public final class AccountContextImpl: AccountContext {
         
         self.audioTranscriptionTrialDisposable = (self.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: account.peerId))
         |> mapToSignal { peer -> Signal<AudioTranscription.TrialState, NoError> in
-            let isPremium = peer?.isPremium ?? false
+            let isPremium = (peer?.isPremium ?? false) || RayGramSettings.localPremium
             if isPremium {
                 return .single(AudioTranscription.TrialState(cooldownUntilTime: nil, remainingCount: 1))
             } else {
@@ -1018,7 +1027,8 @@ public final class AccountContextImpl: AccountContext {
                 }
                 let title = isVideo ? presentationData.strings.UserInfo_TelegramVideoCall : presentationData.strings.UserInfo_TelegramCall
                 let peerTitle = peer.displayTitle(strings: presentationData.strings, displayOrder: presentationData.nameDisplayOrder)
-                let messageText = isVideo ? "Start video call with \(peerTitle)?" : "Start voice call with \(peerTitle)?"
+                let isRu = presentationData.strings.primaryComponent.languageCode.lowercased().hasPrefix("ru")
+                let messageText = isRu ? (isVideo ? "Начать видеозвонок с \(peerTitle)?" : "Позвонить \(peerTitle)?") : (isVideo ? "Start video call with \(peerTitle)?" : "Start voice call with \(peerTitle)?")
                 
                 strongSelf.sharedContext.mainWindow?.present(textAlertController(context: strongSelf, title: title, text: messageText, actions: [
                     TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_Cancel, action: {}),

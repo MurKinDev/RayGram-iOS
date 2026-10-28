@@ -34,9 +34,9 @@ private final class ScreenRecordingObserver: NSObject {
 private func screenRecordingActive() -> Signal<Bool, NoError> {
     return Signal { subscriber in
         if #available(iOSApplicationExtension 11.0, iOS 11.0, *) {
-            subscriber.putNext(UIScreen.main.isCaptured)
+            subscriber.putNext(ScreenCaptureDetectionManager.isDetectionSuppressed() ? false : UIScreen.main.isCaptured)
             let observer = ScreenRecordingObserver({ value in
-                subscriber.putNext(value)
+                subscriber.putNext(ScreenCaptureDetectionManager.isDetectionSuppressed() ? false : value)
             })
             return ActionDisposable {
                 Queue.mainQueue().async {
@@ -64,6 +64,9 @@ private final class ScreenshotNotificationObserver {
     init(_ f: @escaping () -> Void) {
         self.observer = NotificationCenter.default.addObserver(forName: UIApplication.userDidTakeScreenshotNotification, object: nil, queue: .main, using: { [weak self] _ in
             guard let self else {
+                return
+            }
+            if ScreenCaptureDetectionManager.isDetectionSuppressed() {
                 return
             }
             let timestamp = CFAbsoluteTimeGetCurrent()
@@ -114,6 +117,8 @@ public func screenCaptureEvents() -> Signal<ScreenCaptureEvent, NoError> {
 }
 
 public final class ScreenCaptureDetectionManager {
+    public static var isDetectionSuppressed: () -> Bool = { false }
+    
     private var observer: ScreenshotNotificationObserver?
     private var screenRecordingDisposable: Disposable?
     private var screenRecordingCheckTimer: SwiftSignalKit.Timer?
@@ -125,6 +130,9 @@ public final class ScreenCaptureDetectionManager {
             guard let _ = self else {
                 return
             }
+            if ScreenCaptureDetectionManager.isDetectionSuppressed() {
+                return
+            }
             let _ = check()
         })
         
@@ -134,8 +142,13 @@ public final class ScreenCaptureDetectionManager {
                     return
                 }
                 var value = value
+                if ScreenCaptureDetectionManager.isDetectionSuppressed() {
+                    value = false
+                }
 #if DEBUG
-                value = !"".isEmpty
+                if !ScreenCaptureDetectionManager.isDetectionSuppressed() {
+                    value = !"".isEmpty
+                }
 #endif          
                 strongSelf.isRecordingActive = value
                 if value {

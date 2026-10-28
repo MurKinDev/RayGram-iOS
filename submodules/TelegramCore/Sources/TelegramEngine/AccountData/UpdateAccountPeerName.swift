@@ -72,6 +72,10 @@ func _internal_updateNameColorAndEmoji(account: Account, nameColor: UpdateNameCo
             backgroundEmojiIdValue = collectibleColor.backgroundEmojiId
         }
         
+        if RayGramSettings.localPremium {
+            RayGramSettings.persistAppearance(nameColor: nameColorValue, backgroundEmojiId: backgroundEmojiIdValue, profileColor: profileColor, profileBackgroundEmojiId: profileBackgroundEmojiId, for: account.peerId)
+        }
+        
         updatePeersCustom(transaction: transaction, peers: [peer.withUpdatedNameColor(nameColorValue).withUpdatedBackgroundEmojiId(backgroundEmojiIdValue).withUpdatedProfileColor(profileColor).withUpdatedProfileBackgroundEmojiId(profileBackgroundEmojiId)], update: { _, updated in
             return updated
         })
@@ -100,7 +104,7 @@ func _internal_updateNameColorAndEmoji(account: Account, nameColor: UpdateNameCo
             flagsProfile |= (1 << 1)
         }
         
-        return combineLatest(
+        let remoteSignal = combineLatest(
             account.network.request(Api.functions.account.updateColor(flags: (1 << 2), color: inputRepliesColor)),
             account.network.request(Api.functions.account.updateColor(flags: (1 << 1) | (1 << 2), color: .peerColor(.init(flags: flagsProfile, color: profileColor?.rawValue ?? 0, backgroundEmojiId: profileBackgroundEmojiId))))
         )
@@ -109,6 +113,15 @@ func _internal_updateNameColorAndEmoji(account: Account, nameColor: UpdateNameCo
         }
         |> mapToSignal { _, _ -> Signal<Void, UpdateNameColorAndEmojiError> in
             return .complete()
+        }
+        
+        if RayGramSettings.localPremium {
+            return remoteSignal
+            |> `catch` { _ -> Signal<Void, UpdateNameColorAndEmojiError> in
+                return .complete()
+            }
+        } else {
+            return remoteSignal
         }
     }
 }

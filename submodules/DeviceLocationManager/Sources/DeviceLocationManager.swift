@@ -58,9 +58,11 @@ public final class DeviceLocationManager: NSObject {
         self.manager.activityType = .other
         self.manager.pausesLocationUpdatesAutomatically = false
         self.manager.headingFilter = 2.0
+        #if os(iOS)
         if #available(iOS 11.0, *) {
             self.manager.showsBackgroundLocationIndicator = true
         }
+        #endif
     }
     
     public func push(mode: DeviceLocationMode, updated: @escaping (CLLocation, Double?) -> Void) -> Disposable {

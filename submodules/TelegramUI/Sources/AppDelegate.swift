@@ -43,6 +43,7 @@ import ContextMenuScreen
 import MetalEngine
 import RecaptchaEnterprise
 import NavigationBarImpl
+import ScreenCaptureDetection
 import ContextUI
 import ContextControllerImpl
 import ProxyServerPreviewScreen
@@ -358,6 +359,12 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         })
         
         let launchStartTime = CFAbsoluteTimeGetCurrent()
+        
+        ScreenCaptureDetectionManager.isDetectionSuppressed = {
+            return RayGramSettings.antiScreenshot
+        }
+        
+        RayGramFontManager.shared.registerAllImportedFonts()
         
         defaultNavigationBarImpl = { presentationData in
             return NavigationBarImpl(presentationData: presentationData)

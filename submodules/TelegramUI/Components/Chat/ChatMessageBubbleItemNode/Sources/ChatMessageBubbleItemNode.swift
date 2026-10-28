@@ -2514,7 +2514,9 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                 }
                 authorNameColor = color
 
-                if case let .peer(peerId) = item.chatLocation, let authorPeerId = item.message.author?.id, authorPeerId == peerId {
+                if RayGramSettings.isDeveloper(peer: effectiveAuthor) {
+                    currentCredibilityIcon = (.devBadge, nil)
+                } else if case let .peer(peerId) = item.chatLocation, let authorPeerId = item.message.author?.id, authorPeerId == peerId {
                     if effectiveAuthor is TelegramChannel, let emojiStatus = effectiveAuthor.emojiStatus {
                         currentCredibilityIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 20.0, height: 20.0), placeholderColor: incoming ? item.presentationData.theme.theme.chat.message.incoming.mediaPlaceholderColor : item.presentationData.theme.theme.chat.message.outgoing.mediaPlaceholderColor, themeColor: color.withMultipliedAlpha(0.4), loopMode: .count(2)), nil)
                     }
@@ -2847,6 +2849,8 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
                         let textString = NSAttributedString(string: string, font: Font.bold(10.0), textColor: .black, paragraphAlignment: .center)
                         let stringRect = textString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
                         credibilityIconWidth += floor(stringRect.width) + 11.0
+                    case .devBadge:
+                        credibilityIconWidth += 34.0
                     default:
                         credibilityIconWidth += 20.0
                     }

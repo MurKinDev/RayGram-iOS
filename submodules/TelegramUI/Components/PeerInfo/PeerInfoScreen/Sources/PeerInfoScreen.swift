@@ -5480,10 +5480,6 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                         if infoSection == .peerInfo || infoSection == .personalChannel || infoSection == .peerInfoTrailing {
                             isLiquidGlass = true
                         }
-                    } else if let settingsSection = sectionId as? SettingsSection {
-                        if settingsSection == .myProfile {
-                            isLiquidGlass = true
-                        }
                     }
                 }
                 let sectionHeight = sectionNode.update(context: self.context, width: sectionWidth, safeInsets: UIEdgeInsets(), hasCorners: !insets.left.isZero, presentationData: self.presentationData, items: sectionItems, isLiquidGlass: isLiquidGlass, transition: transition)
@@ -5500,7 +5496,11 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 }
                 if !sectionHeight.isZero && !self.state.isEditing {
                     contentHeight += sectionHeight
-                    contentHeight += sectionSpacing
+                    if let infoSection = sectionId as? InfoSection, infoSection == .creatorBadge {
+                        contentHeight += 8.0
+                    } else {
+                        contentHeight += sectionSpacing
+                    }
                 }
             }
             var removeRegularSections: [AnyHashable] = []
@@ -5551,10 +5551,6 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
                 if RayGramSettings.liquidGlassProfile {
                     if let infoSection = sectionId as? InfoSection {
                         if infoSection == .peerInfo || infoSection == .personalChannel || infoSection == .peerInfoTrailing {
-                            isLiquidGlass = true
-                        }
-                    } else if let settingsSection = sectionId as? SettingsSection {
-                        if settingsSection == .myProfile {
                             isLiquidGlass = true
                         }
                     }

@@ -2199,7 +2199,7 @@ extension ChatControllerImpl {
                     }
                     let isPremium = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
                     |> map { peer -> Bool in
-                        return peer?.isPremium ?? false
+                        return (peer?.isPremium ?? false) || RayGramSettings.localPremium
                     } |> distinctUntilChanged
                     
                     let isHidden = context.engine.data.subscribe(TelegramEngine.EngineData.Item.Peer.TranslationHidden(id: peerId))

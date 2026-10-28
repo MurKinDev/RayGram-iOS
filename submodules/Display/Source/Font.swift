@@ -155,15 +155,30 @@ public struct Font {
             self.fonts[key] = font
             pthread_rwlock_unlock(&self.lock)
         }
+        
+        func clear() {
+            pthread_rwlock_wrlock(&self.lock)
+            self.fonts.removeAll()
+            pthread_rwlock_unlock(&self.lock)
+        }
     }
 
     private static let cache = Cache()
+    
+    public static func clearCache() {
+        self.cache.clear()
+    }
     
     public static func with(size: CGFloat, design: Design = .regular, weight: Weight = .regular, width: Width = .standard, traits: Traits = []) -> UIFont {
         let key = "\(size)_\(design.key)_\(weight.key)_\(width.key)_\(traits.rawValue)"
         
         if let cachedFont = self.cache.get(key) {
             return cachedFont
+        }
+        
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: weight, traits: traits) {
+            self.cache.set(custom, key: key)
+            return custom
         }
         if #available(iOS 13.0, *), design != .camera {
             let descriptor: UIFontDescriptor
@@ -289,18 +304,30 @@ public struct Font {
     }
     
     public static func regular(_ size: CGFloat) -> UIFont {
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: .regular) {
+            return custom
+        }
         return UIFont.systemFont(ofSize: size)
     }
     
     public static func medium(_ size: CGFloat) -> UIFont {
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: .medium) {
+            return custom
+        }
         return UIFont.systemFont(ofSize: size, weight: UIFont.Weight.medium)
     }
     
     public static func semibold(_ size: CGFloat) -> UIFont {
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: .semibold) {
+            return custom
+        }
         return UIFont.systemFont(ofSize: size, weight: UIFont.Weight.semibold)
     }
     
     public static func bold(_ size: CGFloat) -> UIFont {
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: .bold) {
+            return custom
+        }
         if #available(iOS 8.2, *) {
             return UIFont.boldSystemFont(ofSize: size)
         } else {
@@ -313,6 +340,9 @@ public struct Font {
     }
     
     public static func light(_ size: CGFloat) -> UIFont {
+        if let custom = RayGramFontManager.shared.resolveFont(size: size, weight: .light) {
+            return custom
+        }
         return UIFont.systemFont(ofSize: size, weight: UIFont.Weight.light)
     }
     

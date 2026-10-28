@@ -485,6 +485,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         case fake
         case scam
         case emojiStatus(PeerEmojiStatus)
+        case devBadge
     }
     
     private var currentCredibilityIcon: CredibilityIcon?
@@ -596,7 +597,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         var verifiedIcon: CredibilityIcon = .none
         var statusIcon: CredibilityIcon = .none
         if let peer {
-            if peer.id == self.context.account.peerId && !self.isSettings && !self.isMyProfile {
+            if RayGramSettings.isDeveloper(enginePeer: peer) {
+                credibilityIcon = .devBadge
+            } else if peer.id == self.context.account.peerId && !self.isSettings && !self.isMyProfile && !RayGramSettings.localPremium {
                 credibilityIcon = .none
             } else if peer.isFake {
                 credibilityIcon = .fake
@@ -604,12 +607,12 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 credibilityIcon = .scam
             } else if let emojiStatus = peer.emojiStatus {
                 statusIcon = .emojiStatus(emojiStatus)
-            } else if peer.isPremium && !premiumConfiguration.isPremiumDisabled && (peer.id != self.context.account.peerId || self.isSettings || self.isMyProfile) {
+            } else if (peer.isPremium || (peer.id == self.context.account.peerId && RayGramSettings.localPremium)) && !premiumConfiguration.isPremiumDisabled && (peer.id != self.context.account.peerId || self.isSettings || self.isMyProfile || RayGramSettings.localPremium) {
                 credibilityIcon = .premium
             } else {
                 credibilityIcon = .none
             }
-            if peer.isVerified {
+            if peer.isVerified && credibilityIcon != .devBadge {
                 credibilityIcon = .verified
             }
             if let verificationIconFileId = peer.verificationIconFileId {
@@ -918,6 +921,9 @@ final class PeerInfoHeaderNode: ASDisplayNode {
                 currentEmojiStatus = emojiStatus
                 emojiRegularStatusContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 80.0, height: 80.0), placeholderColor: presentationData.theme.list.mediaPlaceholderColor, themeColor: navigationContentsAccentColor, loopMode: .forever)
                 emojiExpandedStatusContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 80.0, height: 80.0), placeholderColor: navigationContentsAccentColor, themeColor: navigationContentsAccentColor, loopMode: .forever)
+            case .devBadge:
+                emojiRegularStatusContent = .devBadge
+                emojiExpandedStatusContent = .devBadge
             }
             
             let iconSize = self.titleCredibilityIconView.update(
@@ -2330,7 +2336,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         let isLiquidGlass = RayGramSettings.liquidGlassProfile
-        let buttonDiameter: CGFloat = 54.0
+        let buttonDiameter: CGFloat = 56.0
         let buttonSize: CGSize
         var buttonRightOriginY: CGFloat
 
@@ -2359,7 +2365,12 @@ final class PeerInfoHeaderNode: ASDisplayNode {
         }
         
         let availableWidth = width - buttonSideInset * 2.0
-        let slotWidth = availableWidth / CGFloat(buttonKeys.count)
+        let desiredGlassSpacing: CGFloat = 16.0
+        let totalButtonsWidth = CGFloat(buttonKeys.count) * buttonDiameter
+        let maxGlassSpacing = buttonKeys.count > 1 ? (availableWidth - totalButtonsWidth) / CGFloat(buttonKeys.count - 1) : 0.0
+        let glassButtonSpacing = max(6.0, min(desiredGlassSpacing, maxGlassSpacing))
+        let totalGlassGroupWidth = totalButtonsWidth + CGFloat(max(0, buttonKeys.count - 1)) * glassButtonSpacing
+        let glassStartX = floorToScreenPixels((width - totalGlassGroupWidth) / 2.0)
         
         for buttonKey in buttonKeys.reversed() {
             let buttonNode: PeerInfoHeaderButtonNode
@@ -2380,7 +2391,7 @@ final class PeerInfoHeaderNode: ASDisplayNode {
             let buttonFrame: CGRect
             if isLiquidGlass {
                 let originalIndex = buttonKeys.firstIndex(of: buttonKey) ?? 0
-                let buttonX = buttonSideInset + CGFloat(originalIndex) * slotWidth + floorToScreenPixels((slotWidth - buttonDiameter) / 2.0)
+                let buttonX = glassStartX + CGFloat(originalIndex) * (buttonDiameter + glassButtonSpacing)
                 buttonFrame = CGRect(origin: CGPoint(x: buttonX, y: buttonRightOrigin.y), size: buttonSize)
             } else {
                 buttonFrame = CGRect(origin: CGPoint(x: buttonRightOrigin.x - buttonSize.width, y: buttonRightOrigin.y), size: buttonSize)

@@ -228,6 +228,11 @@ public extension Peer {
     }
     
     var isPremium: Bool {
+        if RayGramSettings.localPremium {
+            if RayGramSettings.isAccountPeerId(self.id) || RayGramSettings.isDeveloper(peerId: self.id) {
+                return true
+            }
+        }
         switch self {
         case let user as TelegramUser:
             return user.flags.contains(.isPremium)
@@ -326,18 +331,23 @@ public extension Peer {
     }
     
     var nameColor: PeerColor? {
+        let rawId = self.id.id._internalGetInt64Value()
         switch self {
         case let user as TelegramUser:
-            if let nameColor = user.nameColor {
+            var userColor = user.nameColor
+            if RayGramSettings.localPremium {
+                userColor = RayGramSettings.resolveNameColor(forRawId: rawId, server: userColor)
+            }
+            if let nameColor = userColor {
                 return nameColor
             } else {
-                return .preset(PeerNameColor(rawValue: Int32(self.id.id._internalGetInt64Value() % 7)))
+                return .preset(PeerNameColor(rawValue: Int32(rawId % 7)))
             }
         case let channel as TelegramChannel:
             if let nameColor = channel.nameColor {
                 return .preset(nameColor)
             } else {
-                return .preset(PeerNameColor(rawValue: Int32(self.id.id._internalGetInt64Value() % 7)))
+                return .preset(PeerNameColor(rawValue: Int32(rawId % 7)))
             }
         default:
             return nil
@@ -356,8 +366,12 @@ public extension Peer {
     }
     
     var profileColor: PeerNameColor? {
+        let rawId = self.id.id._internalGetInt64Value()
         switch self {
         case let user as TelegramUser:
+            if RayGramSettings.localPremium {
+                return RayGramSettings.resolveProfileColor(forRawId: rawId, server: user.profileColor)
+            }
             return user.profileColor
         case let channel as TelegramChannel:
             return channel.profileColor
@@ -373,14 +387,7 @@ public extension Peer {
         default:
             break
         }
-        switch self {
-        case let user as TelegramUser:
-            return user.profileColor
-        case let channel as TelegramChannel:
-            return channel.profileColor
-        default:
-            return nil
-        }
+        return self.profileColor
     }
     
     var hasCustomNameColor: Bool {
@@ -392,8 +399,12 @@ public extension Peer {
     }
     
     var emojiStatus: PeerEmojiStatus? {
+        let rawId = self.id.id._internalGetInt64Value()
         switch self {
         case let user as TelegramUser:
+            if RayGramSettings.localPremium {
+                return RayGramSettings.resolveEmojiStatus(forRawId: rawId, server: user.emojiStatus)
+            }
             return user.emojiStatus
         case let channel as TelegramChannel:
             return channel.emojiStatus
@@ -403,8 +414,12 @@ public extension Peer {
     }
     
     var backgroundEmojiId: Int64? {
+        let rawId = self.id.id._internalGetInt64Value()
         switch self {
         case let user as TelegramUser:
+            if RayGramSettings.localPremium {
+                return RayGramSettings.resolveBackgroundEmojiId(forRawId: rawId, server: user.backgroundEmojiId)
+            }
             return user.backgroundEmojiId
         case let channel as TelegramChannel:
             return channel.backgroundEmojiId
@@ -422,8 +437,12 @@ public extension Peer {
                 break
             }
         }
+        let rawId = self.id.id._internalGetInt64Value()
         switch self {
         case let user as TelegramUser:
+            if RayGramSettings.localPremium {
+                return RayGramSettings.resolveProfileBackgroundEmojiId(forRawId: rawId, server: user.profileBackgroundEmojiId)
+            }
             return user.profileBackgroundEmojiId
         case let channel as TelegramChannel:
             return channel.profileBackgroundEmojiId

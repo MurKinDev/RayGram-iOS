@@ -971,7 +971,7 @@ private struct SelectivePrivacySettingsControllerState: Equatable {
 private func selectivePrivacySettingsControllerEntries(presentationData: PresentationData, kind: SelectivePrivacySettingsKind, state: SelectivePrivacySettingsControllerState, peerName: String, phoneNumber: String, peer: EnginePeer?, birthday: TelegramBirthday?, publicPhoto: TelegramMediaImage??) -> [SelectivePrivacySettingsEntry] {
     var entries: [SelectivePrivacySettingsEntry] = []
     
-    let isPremium = peer?.isPremium ?? false
+    let isPremium = (peer?.isPremium ?? false) || RayGramSettings.localPremium
     
     let settingTitle: String
     let settingInfoText: String?
@@ -1169,7 +1169,7 @@ private func selectivePrivacySettingsControllerEntries(presentationData: Present
         entries.append(.publicPhotoInfo(presentationData.theme, presentationData.strings.Privacy_ProfilePhoto_PublicPhotoInfo))
     }
     
-    if case .presence = kind, let peer {
+    if case .presence = kind, peer != nil {
         let isEnabled: Bool
         switch state.setting {
         case .everybody:
@@ -1185,7 +1185,7 @@ private func selectivePrivacySettingsControllerEntries(presentationData: Present
             entries.append(.hideReadTime(presentationData.theme, presentationData.strings.Settings_Privacy_ReadTime, isEnabled, isEnabled && state.hideReadTimeEnabled == true))
             entries.append(.hideReadTimeInfo(presentationData.theme, presentationData.strings.Settings_Privacy_ReadTimeFooter))
             
-            if !peer.isPremium {
+            if !isPremium {
                 entries.append(.subscribeToPremium(presentationData.theme, presentationData.strings.Settings_Privacy_ReadTimePremium))
                 entries.append(.subscribeToPremiumInfo(presentationData.theme, presentationData.strings.Settings_Privacy_ReadTimePremiumFooter))
             } else {

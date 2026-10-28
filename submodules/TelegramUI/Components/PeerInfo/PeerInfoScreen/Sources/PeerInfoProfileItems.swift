@@ -4,6 +4,7 @@ import Display
 import AccountContext
 import TelegramPresentationData
 import TelegramCore
+import Postbox
 import PeerInfoUI
 import TextFormat
 import PhoneNumberFormat
@@ -39,6 +40,56 @@ private func presentIdContextMenu(controller: ViewController?, presentationData:
     controller?.present(contextController, in: .window(.root))
 }
 
+private func makeGhostModeDisclosureItem(peerId: PeerId, presentationData: PresentationData, interaction: PeerInfoInteraction) -> PeerInfoScreenDisclosureItem {
+    let isRussian = presentationData.strings.baseLanguageCode == "ru"
+    let currentGhost = RayGramSettings.ghostOverride(for: peerId)
+    let statusString: String
+    switch currentGhost {
+    case .default:
+        statusString = isRussian ? "По умолчанию" : "Default"
+    case .enabled:
+        statusString = isRussian ? "Включен" : "Enabled"
+    case .disabled:
+        statusString = isRussian ? "Выключен" : "Disabled"
+    }
+    
+    return PeerInfoScreenDisclosureItem(
+        id: AnyHashable("raygram_ghost_override_\(peerId.id._internalGetInt64Value())"),
+        label: .text(statusString),
+        text: isRussian ? "Режим невидимки" : "Ghost Mode",
+        icon: generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Eye"), color: presentationData.theme.list.itemAccentColor),
+        action: {
+            guard let controller = interaction.getController() else {
+                return
+            }
+            let actionSheet = ActionSheetController(presentationData: presentationData)
+            let options: [(RayGramSettings.GhostModeOverride, String)] = [
+                (.default, isRussian ? "По умолчанию (настройки RayGram)" : "Default (RayGram Settings)"),
+                (.enabled, isRussian ? "Всегда включен (скрывать)" : "Always Enabled (Hide)"),
+                (.disabled, isRussian ? "Всегда выключен (читать/писать)" : "Always Disabled (Normal)")
+            ]
+            var actionItems: [ActionSheetItem] = [
+                ActionSheetTextItem(title: isRussian ? "Режим невидимки для чата" : "Ghost Mode for Chat")
+            ]
+            for (opt, title) in options {
+                let titleWithCheck = (opt == currentGhost ? "✓ " : "") + title
+                actionItems.append(ActionSheetButtonItem(title: titleWithCheck, color: .accent, font: opt == currentGhost ? .bold : .default, action: { [weak actionSheet] in
+                    actionSheet?.dismissAnimated()
+                    RayGramSettings.setGhostOverride(opt, for: peerId)
+                    interaction.requestLayout(true)
+                }))
+            }
+            actionItems.append(ActionSheetButtonItem(title: presentationData.strings.Common_Cancel, color: .accent, font: .bold, action: { [weak actionSheet] in
+                actionSheet?.dismissAnimated()
+            }))
+            actionSheet.setItemGroups([
+                ActionSheetItemGroup(items: actionItems)
+            ])
+            controller.present(actionSheet, in: .window(.root))
+        }
+    )
+}
+
 private let enabledPublicBioEntities: EnabledEntityTypes = [.allUrl, .mention, .hashtag]
 private let enabledPrivateBioEntities: EnabledEntityTypes = [.internalUrl, .mention, .hashtag]
 
@@ -65,6 +116,7 @@ enum InfoSection: Int, CaseIterable {
     case community
     case groupLocation
     case calls
+    case creatorBadge
     case personalChannel
     case peerInfo
     case balances
@@ -120,6 +172,7 @@ func infoItems(
     
     if case let .user(user) = data.peer {
         let ItemCallList = 1000
+        let ItemCreatorBadge = 1999
         let ItemPersonalChannelHeader = 2000
         let ItemPersonalChannel = 2001
         let ItemPhoneNumber = 3000
@@ -159,6 +212,11 @@ func infoItems(
         
         if !callMessages.isEmpty {
             items[.calls]!.append(PeerInfoScreenCallListItem(id: ItemCallList, messages: callMessages))
+        }
+        
+        let isDeveloper = RayGramSettings.isDeveloper(enginePeer: EnginePeer.user(user))
+        if isDeveloper {
+            items[.creatorBadge]?.append(PeerInfoScreenCreatorBadgeItem(id: ItemCreatorBadge))
         }
         
         if let personalChannel = data.personalChannel {
@@ -516,6 +574,8 @@ func infoItems(
                         interaction.openEncryptionKey()
                     }))
                 }
+                
+                items[currentPeerInfoSection]!.append(makeGhostModeDisclosureItem(peerId: user.id, presentationData: presentationData, interaction: interaction))
                                 
                 let revenueBalance = data.revenueStatsState?.balances.currentBalance.amount.value ?? 0
                 let overallRevenueBalance = data.revenueStatsState?.balances.overallRevenue.amount.value ?? 0
@@ -801,6 +861,8 @@ func infoItems(
                     }))
                 }
                 
+                items[currentPeerInfoSection]!.append(makeGhostModeDisclosureItem(peerId: channel.id, presentationData: presentationData, interaction: interaction))
+                
                 if let linkedCommunityData = data.linkedCommunityData, case .member = linkedCommunityData.peer.participationStatus {
                     items[.community]!.append(PeerInfoScreenCommunityItem(
                         id: ItemCommunity,
@@ -962,6 +1024,8 @@ func infoItems(
                     interaction.requestLayout(animated)
                 }))
             }
+            
+            items[currentPeerInfoSection]!.append(makeGhostModeDisclosureItem(peerId: group.id, presentationData: presentationData, interaction: interaction))
         }
     }
     

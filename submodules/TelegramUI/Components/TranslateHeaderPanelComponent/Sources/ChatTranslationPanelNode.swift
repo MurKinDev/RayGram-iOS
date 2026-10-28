@@ -211,7 +211,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
         guard let info = self.currentInfo else {
             return
         }
-        let isPremium = info.isPremium
+        let isPremium = info.isPremium || RayGramSettings.localPremium
         
         var translationAvailable = isPremium
         if case let .channel(channel) = info.peer, channel.flags.contains(.autoTranslateEnabled) {
@@ -230,7 +230,7 @@ final class ChatTranslationPanelNode: ASDisplayNode {
             return
         }
         
-        let isPremium = info.isPremium
+        let isPremium = info.isPremium || RayGramSettings.localPremium
         
         var translationAvailable = isPremium
         if case let .channel(channel) = info.peer, channel.flags.contains(.autoTranslateEnabled) {

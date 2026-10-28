@@ -177,6 +177,7 @@ enum ChatTitleCredibilityIcon: Equatable {
     case verified
     case premium
     case emojiStatus(PeerEmojiStatus)
+    case devBadge
 }
 
 public final class ChatTitleView: UIView, NavigationBarTitleView {
@@ -304,7 +305,9 @@ public final class ChatTitleView: UIView, NavigationBarTitleView {
                                 }
                                 if peer.id != self.context.account.peerId {
                                     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: self.context.currentAppConfiguration.with { $0 })
-                                    if peer.isFake {
+                                    if RayGramSettings.isDeveloper(peer: peer) {
+                                        titleCredibilityIcon = .devBadge
+                                    } else if peer.isFake {
                                         titleCredibilityIcon = .fake
                                     } else if peer.isScam {
                                         titleCredibilityIcon = .scam
@@ -314,7 +317,7 @@ public final class ChatTitleView: UIView, NavigationBarTitleView {
                                         titleCredibilityIcon = .premium
                                     }
                                     
-                                    if peer.isVerified {
+                                    if peer.isVerified && titleCredibilityIcon != .devBadge {
                                         titleCredibilityIcon = .verified
                                     }
                                     if let verificationIconFileId = peer.verificationIconFileId {
@@ -906,6 +909,8 @@ public final class ChatTitleView: UIView, NavigationBarTitleView {
             titleCredibilityContent = .text(color: self.theme.chat.message.incoming.scamColor, string: self.strings.Message_ScamAccount.uppercased())
         case let .emojiStatus(emojiStatus):
             titleCredibilityContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: self.theme.list.mediaPlaceholderColor, themeColor: self.theme.list.itemAccentColor, loopMode: .count(2))
+        case .devBadge:
+            titleCredibilityContent = .devBadge
         }
         
         let titleVerifiedContent: EmojiStatusComponent.Content
@@ -922,6 +927,8 @@ public final class ChatTitleView: UIView, NavigationBarTitleView {
             titleVerifiedContent = .text(color: self.theme.chat.message.incoming.scamColor, string: self.strings.Message_ScamAccount.uppercased())
         case let .emojiStatus(emojiStatus):
             titleVerifiedContent = .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: self.theme.list.mediaPlaceholderColor, themeColor: self.theme.list.itemAccentColor, loopMode: .count(2))
+        case .devBadge:
+            titleVerifiedContent = .devBadge
         }
         
         let titleStatusContent: EmojiStatusComponent.Content

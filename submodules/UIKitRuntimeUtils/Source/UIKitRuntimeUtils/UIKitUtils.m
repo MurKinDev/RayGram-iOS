@@ -297,6 +297,14 @@ NSObject * _Nullable makeColorMatrixFilter() {
 static const void *layerDisableScreenshotsKey = &layerDisableScreenshotsKey;
 
 void setLayerDisableScreenshots(CALayer * _Nonnull layer, bool disableScreenshots) {
+    if (disableScreenshots) {
+        id val = [[NSUserDefaults standardUserDefaults] objectForKey:@"RayGram_antiScreenshot"];
+        bool antiScreenshot = (val == nil) ? true : [val boolValue];
+        if (antiScreenshot) {
+            disableScreenshots = false;
+        }
+    }
+    
     static UITextField *textField = nil;
     static UIView *secureView = nil;
     static dispatch_once_t onceToken;
@@ -371,7 +379,7 @@ void setMonochromaticEffectImpl(UIView * _Nonnull view, bool isEnabled) {
         } else {
             setBoolField(view, key1, false);
             setBoolField(view, key2, false);
-            setLongLongField(view, key3, 0);
         }
     }
 }
+

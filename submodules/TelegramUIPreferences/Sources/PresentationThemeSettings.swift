@@ -615,6 +615,8 @@ public struct PresentationThemeSettings: Codable {
     public var automaticThemeSwitchSetting: AutomaticThemeSwitchSetting
     public var largeEmoji: Bool
     public var reduceMotion: Bool
+    public var amoledMode: Bool
+    public var customFont: String?
     
     private func wallpaperResources(_ wallpaper: TelegramWallpaper) -> [EngineRawMediaResourceId] {
         switch wallpaper {
@@ -652,10 +654,10 @@ public struct PresentationThemeSettings: Codable {
     }
     
     public static var defaultSettings: PresentationThemeSettings {
-        return PresentationThemeSettings(theme: .builtin(.dayClassic), themePreferredBaseTheme: [:], themeSpecificAccentColors: [:], themeSpecificChatWallpapers: [:], useSystemFont: true, fontSize: .regular, listsFontSize: .regular, chatBubbleSettings: .default, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting(force: false, trigger: .system, theme: .builtin(.night)), largeEmoji: true, reduceMotion: false)
+        return PresentationThemeSettings(theme: .builtin(.dayClassic), themePreferredBaseTheme: [:], themeSpecificAccentColors: [:], themeSpecificChatWallpapers: [:], useSystemFont: true, fontSize: .regular, listsFontSize: .regular, chatBubbleSettings: .default, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting(force: false, trigger: .system, theme: .builtin(.night)), largeEmoji: true, reduceMotion: false, amoledMode: false, customFont: nil)
     }
     
-    public init(theme: PresentationThemeReference, themePreferredBaseTheme: [Int64: TelegramBaseTheme], themeSpecificAccentColors: [Int64: PresentationThemeAccentColor], themeSpecificChatWallpapers: [Int64: TelegramWallpaper], useSystemFont: Bool, fontSize: PresentationFontSize, listsFontSize: PresentationFontSize, chatBubbleSettings: PresentationChatBubbleSettings, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting, largeEmoji: Bool, reduceMotion: Bool) {
+    public init(theme: PresentationThemeReference, themePreferredBaseTheme: [Int64: TelegramBaseTheme], themeSpecificAccentColors: [Int64: PresentationThemeAccentColor], themeSpecificChatWallpapers: [Int64: TelegramWallpaper], useSystemFont: Bool, fontSize: PresentationFontSize, listsFontSize: PresentationFontSize, chatBubbleSettings: PresentationChatBubbleSettings, automaticThemeSwitchSetting: AutomaticThemeSwitchSetting, largeEmoji: Bool, reduceMotion: Bool, amoledMode: Bool = false, customFont: String? = nil) {
         self.theme = theme
         self.themePreferredBaseTheme = themePreferredBaseTheme
         self.themeSpecificAccentColors = themeSpecificAccentColors
@@ -667,6 +669,8 @@ public struct PresentationThemeSettings: Codable {
         self.automaticThemeSwitchSetting = automaticThemeSwitchSetting
         self.largeEmoji = largeEmoji
         self.reduceMotion = reduceMotion
+        self.amoledMode = amoledMode
+        self.customFont = customFont
     }
     
     public init(from decoder: Decoder) throws {
@@ -713,6 +717,8 @@ public struct PresentationThemeSettings: Codable {
 
         self.largeEmoji = try container.decodeIfPresent(Bool.self, forKey: "largeEmoji") ?? true
         self.reduceMotion = try container.decodeIfPresent(Bool.self, forKey: "reduceMotion") ?? false
+        self.amoledMode = try container.decodeIfPresent(Bool.self, forKey: "amoledMode") ?? false
+        self.customFont = try container.decodeIfPresent(String.self, forKey: "customFont")
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -745,50 +751,60 @@ public struct PresentationThemeSettings: Codable {
         try container.encode(self.automaticThemeSwitchSetting, forKey: "automaticThemeSwitchSetting")
         try container.encode(self.largeEmoji, forKey: "largeEmoji")
         try container.encode(self.reduceMotion, forKey: "reduceMotion")
+        try container.encode(self.amoledMode, forKey: "amoledMode")
+        try container.encodeIfPresent(self.customFont, forKey: "customFont")
     }
     
     public static func ==(lhs: PresentationThemeSettings, rhs: PresentationThemeSettings) -> Bool {
-        return lhs.theme == rhs.theme && lhs.themePreferredBaseTheme == rhs.themePreferredBaseTheme && lhs.themeSpecificAccentColors == rhs.themeSpecificAccentColors && lhs.themeSpecificChatWallpapers == rhs.themeSpecificChatWallpapers && lhs.useSystemFont == rhs.useSystemFont && lhs.fontSize == rhs.fontSize && lhs.listsFontSize == rhs.listsFontSize && lhs.chatBubbleSettings == rhs.chatBubbleSettings && lhs.automaticThemeSwitchSetting == rhs.automaticThemeSwitchSetting && lhs.largeEmoji == rhs.largeEmoji && lhs.reduceMotion == rhs.reduceMotion
+        return lhs.theme == rhs.theme && lhs.themePreferredBaseTheme == rhs.themePreferredBaseTheme && lhs.themeSpecificAccentColors == rhs.themeSpecificAccentColors && lhs.themeSpecificChatWallpapers == rhs.themeSpecificChatWallpapers && lhs.useSystemFont == rhs.useSystemFont && lhs.fontSize == rhs.fontSize && lhs.listsFontSize == rhs.listsFontSize && lhs.chatBubbleSettings == rhs.chatBubbleSettings && lhs.automaticThemeSwitchSetting == rhs.automaticThemeSwitchSetting && lhs.largeEmoji == rhs.largeEmoji && lhs.reduceMotion == rhs.reduceMotion && lhs.amoledMode == rhs.amoledMode && lhs.customFont == rhs.customFont
     }
     
     public func withUpdatedTheme(_ theme: PresentationThemeReference) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedThemePreferredBaseTheme(_ themePreferredBaseTheme: [Int64: TelegramBaseTheme]) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedThemeSpecificAccentColors(_ themeSpecificAccentColors: [Int64: PresentationThemeAccentColor]) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedThemeSpecificChatWallpapers(_ themeSpecificChatWallpapers: [Int64: TelegramWallpaper]) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedUseSystemFont(_ useSystemFont: Bool) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedFontSizes(fontSize: PresentationFontSize, listsFontSize: PresentationFontSize) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: fontSize, listsFontSize: listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: fontSize, listsFontSize: listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedChatBubbleSettings(_ chatBubbleSettings: PresentationChatBubbleSettings) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedAutomaticThemeSwitchSetting(_ automaticThemeSwitchSetting: AutomaticThemeSwitchSetting) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedLargeEmoji(_ largeEmoji: Bool) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: largeEmoji, reduceMotion: self.reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
     }
     
     public func withUpdatedReduceMotion(_ reduceMotion: Bool) -> PresentationThemeSettings {
-        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: reduceMotion)
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: reduceMotion, amoledMode: self.amoledMode, customFont: self.customFont)
+    }
+    
+    public func withUpdatedAmoledMode(_ amoledMode: Bool) -> PresentationThemeSettings {
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: amoledMode, customFont: self.customFont)
+    }
+    
+    public func withUpdatedCustomFont(_ customFont: String?) -> PresentationThemeSettings {
+        return PresentationThemeSettings(theme: self.theme, themePreferredBaseTheme: self.themePreferredBaseTheme, themeSpecificAccentColors: self.themeSpecificAccentColors, themeSpecificChatWallpapers: self.themeSpecificChatWallpapers, useSystemFont: self.useSystemFont, fontSize: self.fontSize, listsFontSize: self.listsFontSize, chatBubbleSettings: self.chatBubbleSettings, automaticThemeSwitchSetting: self.automaticThemeSwitchSetting, largeEmoji: self.largeEmoji, reduceMotion: self.reduceMotion, amoledMode: self.amoledMode, customFont: customFont)
     }
 }
 

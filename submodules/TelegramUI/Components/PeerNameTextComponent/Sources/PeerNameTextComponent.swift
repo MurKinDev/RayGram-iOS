@@ -90,13 +90,15 @@ public final class PeerNameTextComponent: Component {
         func update(component: PeerNameTextComponent, availableSize: CGSize, state: EmptyComponentState, environment: Environment<Empty>, transition: ComponentTransition) -> CGSize {
             var iconContent: EmojiStatusComponent.Content?
             if let peer = component.peer {
-                if peer.isScam {
+                if RayGramSettings.isDeveloper(enginePeer: peer) {
+                    iconContent = .devBadge
+                } else if peer.isScam {
                     iconContent = .text(color: UIColor(rgb: 0xeb5545), string: component.strings.Message_ScamAccount.uppercased())
                 } else if peer.isFake {
                     iconContent = .text(color: UIColor(rgb: 0xeb5545), string: component.strings.Message_FakeAccount.uppercased())
                 }
                 
-                if peer.isVerified {
+                if peer.isVerified && iconContent != .devBadge {
                     iconContent = .verified(fillColor: component.iconBackgroundColor, foregroundColor: component.iconForegroundColor, sizeType: .compact)
                 }
             }

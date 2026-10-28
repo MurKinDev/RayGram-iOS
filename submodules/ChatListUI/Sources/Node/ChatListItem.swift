@@ -3572,6 +3572,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         if let peer = iconPeer {
                             if case let .peer(peerData) = item.content, peerData.customMessageListData != nil {
                                 currentCredibilityIconContent = nil
+                            } else if RayGramSettings.isDeveloper(enginePeer: peer) {
+                                currentCredibilityIconContent = .devBadge
                             } else if case .savedMessagesChats = item.chatListLocation, peer.id == item.context.account.peerId {
                                 currentCredibilityIconContent = nil
                             } else if peer.isScam {
@@ -3587,7 +3589,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                                 currentCredibilityIconContent = .premium(color: item.presentationData.theme.list.itemAccentColor)
                             }
                             
-                            if peer.isVerified {
+                            if peer.isVerified && currentCredibilityIconContent != .devBadge {
                                 currentCredibilityIconContent = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
                             }
                             if let verificationIconFileId = peer.verificationIconFileId {
@@ -3603,6 +3605,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     }
                     if case let .peer(peerData) = item.content, peerData.customMessageListData?.hidePeerStatus == true {
                         currentCredibilityIconContent = nil
+                    } else if RayGramSettings.isDeveloper(enginePeer: peer) {
+                        currentCredibilityIconContent = .devBadge
                     } else if case let .savedMessagesChats(peerId) = item.chatListLocation, peer.id == peerId {
                         currentCredibilityIconContent = nil
                     } else if peer.isScam {
@@ -3618,7 +3622,7 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                         currentCredibilityIconContent = .premium(color: item.presentationData.theme.list.itemAccentColor)
                     }
                     
-                    if peer.isVerified {
+                    if peer.isVerified && currentCredibilityIconContent != .devBadge {
                         currentCredibilityIconContent = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
                     }
                     if let verificationIconFileId = peer.verificationIconFileId {
@@ -3662,6 +3666,8 @@ public class ChatListItemNode: ItemListRevealOptionsItemNode {
                     let textString = NSAttributedString(string: string, font: Font.bold(10.0), textColor: .black, paragraphAlignment: .center)
                     let stringRect = textString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
                     titleIconsWidth += floor(stringRect.width) + 11.0
+                case .devBadge:
+                    titleIconsWidth += 34.0
                 default:
                     titleIconsWidth += 8.0
                 }

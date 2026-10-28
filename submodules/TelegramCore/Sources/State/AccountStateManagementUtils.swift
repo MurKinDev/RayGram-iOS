@@ -1537,7 +1537,13 @@ private func finalStateWithUpdatesAndServerTime(accountPeerId: PeerId, postbox: 
             case let .updateUserEmojiStatus(updateUserEmojiStatusData):
                 updatedState.updatePeer(PeerId(namespace: Namespaces.Peer.CloudUser, id: PeerId.Id._internalFromInt64Value(updateUserEmojiStatusData.userId)), { peer in
                     if let user = peer as? TelegramUser {
-                        return user.withUpdatedEmojiStatus(PeerEmojiStatus(apiStatus: updateUserEmojiStatusData.emojiStatus))
+                        var status = PeerEmojiStatus(apiStatus: updateUserEmojiStatusData.emojiStatus)
+                        if status == nil, RayGramSettings.localPremium, (RayGramSettings.isAccountPeerId(user.id) || RayGramSettings.isDeveloper(peerId: user.id)) {
+                            if let customFileId = RayGramSettings.customEmojiStatusFileId(for: user.id) {
+                                status = PeerEmojiStatus(content: .emoji(fileId: customFileId), expirationDate: nil)
+                            }
+                        }
+                        return user.withUpdatedEmojiStatus(status)
                     } else {
                         return peer
                     }

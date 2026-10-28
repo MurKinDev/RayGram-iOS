@@ -2168,7 +2168,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
             return
         }
         self.playedPremiumStickerAnimation = true
-        if item.message.attributes.contains(where: { attribute in
+        if !RayGramSettings.localPremium && item.message.attributes.contains(where: { attribute in
             if attribute is NonPremiumMessageAttribute {
                 return true
             } else {
@@ -2551,7 +2551,7 @@ public class ChatMessageAnimatedStickerItemNode: ChatMessageItemView {
                         }
                     })
                     
-                    if file.isPremiumSticker && !noPremium {
+                    if file.isPremiumSticker && (!noPremium || RayGramSettings.localPremium) {
                         return .optionalAction({
                             if self.additionalAnimationNodes.isEmpty {
                                 self.playedPremiumStickerAnimation = false

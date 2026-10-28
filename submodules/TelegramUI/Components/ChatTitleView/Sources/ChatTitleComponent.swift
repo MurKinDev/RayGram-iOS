@@ -911,6 +911,8 @@ public final class ChatTitleComponent: Component {
                     return .text(color: component.theme.chat.message.incoming.scamColor, string: component.strings.Message_ScamAccount.uppercased())
                 case let .emojiStatus(emojiStatus):
                     return .animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: component.theme.list.mediaPlaceholderColor, themeColor: component.theme.list.itemAccentColor, loopMode: .count(2))
+                case .devBadge:
+                    return .devBadge
                 }
             }
             

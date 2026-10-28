@@ -540,7 +540,9 @@ class CallListCallItemNode: ItemListRevealOptionsItemNode {
             let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
             var currentCredibilityIconImage: UIImage?
             if let peer = item.topMessage.peers[item.topMessage.id.peerId], peer.id != item.context.account.peerId {
-                if peer.isScam {
+                if RayGramSettings.isDeveloper(peer: peer) {
+                    currentCredibilityIconImage = PresentationResourcesChatList.devBadgeImage()
+                } else if peer.isScam {
                     currentCredibilityIconImage = PresentationResourcesChatList.scamIcon(item.presentationData.theme, strings: item.presentationData.strings, type: .regular)
                 } else if peer.isFake {
                     currentCredibilityIconImage = PresentationResourcesChatList.fakeIcon(item.presentationData.theme, strings: item.presentationData.strings, type: .regular)

@@ -157,7 +157,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                 guard case let .user(user) = peer else {
                     return false
                 }
-                return user.isPremium
+                return user.isPremium || RayGramSettings.localPremium
             }
             |> distinctUntilChanged
         }
@@ -952,7 +952,7 @@ public final class ChatEntityKeyboardInputNode: ChatInputNode {
                             guard case let .user(user) = peer else {
                                 return false
                             }
-                            return user.isPremium
+                            return user.isPremium || RayGramSettings.localPremium
                         }
                         |> distinctUntilChanged
 
@@ -2867,7 +2867,7 @@ public final class EmojiContentPeekBehaviorImpl: EmojiContentPeekBehavior {
                 if file.isCustomEmoji {
                     return context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: accountPeerId)) |> map { peer -> Bool in
                         var hasPremium = false
-                        if case let .user(user) = peer, user.isPremium {
+                        if case let .user(user) = peer, user.isPremium || RayGramSettings.localPremium {
                             hasPremium = true
                         }
                         return hasPremium
@@ -2978,7 +2978,7 @@ public final class EmojiContentPeekBehaviorImpl: EmojiContentPeekBehavior {
                         context.engine.stickers.isStickerSaved(id: file.fileId),
                         context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: accountPeerId)) |> map { peer -> Bool in
                             var hasPremium = false
-                            if case let .user(user) = peer, user.isPremium {
+                            if case let .user(user) = peer, user.isPremium || RayGramSettings.localPremium {
                                 hasPremium = true
                             }
                             return hasPremium

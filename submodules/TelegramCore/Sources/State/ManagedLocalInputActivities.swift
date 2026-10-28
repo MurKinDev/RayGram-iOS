@@ -174,7 +174,7 @@ private func requestActivity(postbox: Postbox, network: Network, accountPeerId: 
                     return .complete()
                 }
             }
-            if RayGramSettings.ghostTyping {
+            if RayGramSettings.isGhostTyping(for: peerId) {
                 return .complete()
             }
             

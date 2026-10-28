@@ -52,6 +52,7 @@ public final class EmojiStatusComponent: Component {
         case animation(content: AnimationContent, size: CGSize, placeholderColor: UIColor, themeColor: UIColor?, loopMode: LoopMode)
         case topic(title: String, color: Int32, size: CGSize)
         case image(image: UIImage?, tintColor: UIColor?)
+        case devBadge
     }
     
     public let postbox: Postbox
@@ -405,6 +406,8 @@ public final class EmojiStatusComponent: Component {
                         let titleFrame = CTFramesetterCreateFrame(titleFramesetter, CFRangeMake(0, titleString.length), titlePath, nil)
                         CTFrameDraw(titleFrame, context)
                     })
+                case .devBadge:
+                    iconImage = generateDevBadgeImage()
                 case let .animation(animationContent, size, placeholderColor, themeColor, loopMode):
                     iconImage = nil
                     emojiFileId = animationContent.fileId.id
@@ -501,7 +504,7 @@ public final class EmojiStatusComponent: Component {
                 
                 var useFit = false
                 switch component.content {
-                case .text:
+                case .text, .devBadge:
                     useFit = true
                 case .verified(_, _, sizeType: .compact):
                     useFit = true
@@ -740,4 +743,47 @@ public final class StarsEffectLayer: SimpleLayer {
         self.emitterLayer.frame = CGRect(origin: .zero, size: size)
         self.emitterLayer.emitterPosition = CGPoint(x: size.width / 2.0, y: size.height / 2.0)
     }
+}
+
+private var cachedDevBadgeImage: UIImage?
+private func generateDevBadgeImage() -> UIImage? {
+    if let cached = cachedDevBadgeImage {
+        return cached
+    }
+    let titleString = NSAttributedString(string: "DEV", font: Font.bold(10.0), textColor: .white, paragraphAlignment: .center)
+    let stringRect = titleString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
+    let size = CGSize(width: floor(stringRect.width) + 12.0, height: 16.0)
+    let image = generateImage(size, contextGenerator: { size, context in
+        let bounds = CGRect(origin: CGPoint(), size: size)
+        context.clear(bounds)
+        
+        let path = UIBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 4.0).cgPath
+        
+        context.saveGState()
+        context.addPath(path)
+        context.clip()
+        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let gradientColors = [
+            UIColor(rgb: 0xC084FC).cgColor,
+            UIColor(rgb: 0x7E22CE).cgColor
+        ] as CFArray
+        if let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: [0.0, 1.0]) {
+            context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: size.height), end: CGPoint(x: size.width, y: 0), options: [])
+        }
+        context.restoreGState()
+        
+        context.setStrokeColor(UIColor(rgb: 0xF3E8FF).withAlphaComponent(0.85).cgColor)
+        context.setLineWidth(1.0)
+        context.addPath(path)
+        context.strokePath()
+        
+        let titlePath = CGMutablePath()
+        titlePath.addRect(bounds.offsetBy(dx: 0.0, dy: -2.0 + UIScreenPixel))
+        let titleFramesetter = CTFramesetterCreateWithAttributedString(titleString as CFAttributedString)
+        let titleFrame = CTFramesetterCreateFrame(titleFramesetter, CFRangeMake(0, titleString.length), titlePath, nil)
+        CTFrameDraw(titleFrame, context)
+    })
+    cachedDevBadgeImage = image
+    return image
 }

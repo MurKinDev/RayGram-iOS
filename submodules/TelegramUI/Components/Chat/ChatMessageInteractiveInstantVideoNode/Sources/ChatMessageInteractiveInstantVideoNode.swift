@@ -623,7 +623,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
             }
             
             let currentTime = Int32(Date().timeIntervalSince1970)
-            if transcribedText == nil, let cooldownUntilTime = item.associatedData.audioTranscriptionTrial.cooldownUntilTime, cooldownUntilTime > currentTime {
+            if transcribedText == nil, let cooldownUntilTime = item.associatedData.audioTranscriptionTrial.cooldownUntilTime, cooldownUntilTime > currentTime, !RayGramSettings.localPremium, !RayGramSettings.localSpeechToText {
                 updatedAudioTranscriptionState = .locked
             }
             
@@ -829,7 +829,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                     var displayTranscribe = false
                     if item.message.id.peerId.namespace != Namespaces.Peer.SecretChat && statusDisplayType == .free && !isViewOnceMessage && !item.presentationData.isPreview {
                         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
-                        if item.associatedData.isPremium || item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+                        if item.associatedData.isPremium || item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost || RayGramSettings.localPremium || RayGramSettings.localSpeechToText {
                             displayTranscribe = true
                         } else if premiumConfiguration.audioTransciptionTrialCount > 0 {
                             if incoming {
@@ -1813,7 +1813,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
             return
         }
         
-        if !item.context.isPremium, case .inProgress = self.audioTranscriptionState {
+        if !item.context.isPremium && !RayGramSettings.localPremium && !RayGramSettings.localSpeechToText, case .inProgress = self.audioTranscriptionState {
             return
         }
         
@@ -1821,7 +1821,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
         let premiumConfiguration = PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 })
         
         let transcriptionText = transcribedText(message: EngineMessage(item.message))
-        if transcriptionText == nil && !item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+        if transcriptionText == nil && !item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && !RayGramSettings.localPremium && !RayGramSettings.localSpeechToText {
             if premiumConfiguration.audioTransciptionTrialCount > 0 {
                 if !item.associatedData.isPremium {
                     if self.presentAudioTranscriptionTooltip(finished: false) {
@@ -1889,7 +1889,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
                     strongSelf.transcribeDisposable?.dispose()
                     strongSelf.transcribeDisposable = nil
                     
-                    if let item = strongSelf.item, !item.associatedData.isPremium && !item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost {
+                    if let item = strongSelf.item, !item.associatedData.isPremium && !item.associatedData.alwaysDisplayTranscribeButton.providedByGroupBoost && !RayGramSettings.localPremium && !RayGramSettings.localSpeechToText {
                         Queue.mainQueue().after(0.1, {
                             let _ = strongSelf.presentAudioTranscriptionTooltip(finished: true)
                         })
@@ -1916,7 +1916,7 @@ public class ChatMessageInteractiveInstantVideoNode: ASDisplayNode {
     }
     
     private func presentAudioTranscriptionTooltip(finished: Bool) -> Bool {
-        guard let item = self.item, !item.associatedData.isPremium else {
+        guard let item = self.item, !item.associatedData.isPremium && !RayGramSettings.localPremium && !RayGramSettings.localSpeechToText else {
             return false
         }
         

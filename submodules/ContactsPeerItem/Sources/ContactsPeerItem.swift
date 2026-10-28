@@ -875,7 +875,9 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
             switch item.peer {
             case let .peer(peer, _):
                 if let peer = peer, (peer.id != item.context.account.peerId || item.peerMode == .memberList || item.aliasHandling == .standard) {
-                    if peer.isScam {
+                    if RayGramSettings.isDeveloper(enginePeer: peer) {
+                        credibilityStatusIcon = .devBadge
+                    } else if peer.isScam {
                         credibilityStatusIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
                     } else if peer.isFake {
                         credibilityStatusIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
@@ -888,7 +890,7 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                         credibilityStatusIcon = .premium(color: item.presentationData.theme.list.itemAccentColor)
                     }
                     
-                    if peer.isVerified {
+                    if peer.isVerified && credibilityStatusIcon != .devBadge {
                         credibilityStatusIcon = .verified(fillColor: item.presentationData.theme.list.itemCheckColors.fillColor, foregroundColor: item.presentationData.theme.list.itemCheckColors.foregroundColor, sizeType: .compact)
                     }
                     if let verificationIconFileId = peer.verificationIconFileId {
@@ -1143,6 +1145,8 @@ public class ContactsPeerItemNode: ItemListRevealOptionsItemNode {
                     let textString = NSAttributedString(string: string, font: Font.bold(10.0), textColor: .black, paragraphAlignment: .center)
                     let stringRect = textString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
                     additionalTitleInset += floor(stringRect.width) + 11.0
+                case .devBadge:
+                    additionalTitleInset += 34.0
                 default:
                     additionalTitleInset += 16.0
                 }

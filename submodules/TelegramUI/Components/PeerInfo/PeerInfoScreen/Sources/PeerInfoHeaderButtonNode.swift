@@ -7,6 +7,7 @@ import AnimationUI
 import Display
 import TelegramPresentationData
 import ComponentFlow
+import ComponentDisplayAdapters
 import LottieComponent
 import GlassBackgroundComponent
 import TelegramCore
@@ -60,7 +61,7 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
     
     let backgroundContainerView: UIView
     let backgroundView: UIView
-    private var liquidGlassView: PeerInfoLiquidGlassView?
+    private var glassView: GlassBackgroundView?
     
     init(key: PeerInfoHeaderButtonKey, action: @escaping (PeerInfoHeaderButtonNode, ContextGesture?) -> Void) {
         self.key = key
@@ -328,30 +329,40 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
         self.referenceNode.contextMenuSourcePath = UIBezierPath(roundedRect: backgroundFrame, cornerRadius: cornerRadius)
         
         if isLiquidGlass {
-            let liquidGlassView: PeerInfoLiquidGlassView
-            if let current = self.liquidGlassView {
-                liquidGlassView = current
+            let glassView: GlassBackgroundView
+            if let current = self.glassView {
+                glassView = current
             } else {
-                liquidGlassView = PeerInfoLiquidGlassView()
-                self.liquidGlassView = liquidGlassView
-                self.referenceNode.view.insertSubview(liquidGlassView, at: 0)
+                let current = GlassBackgroundView()
+                current.isUserInteractionEnabled = false
+                self.glassView = current
+                self.referenceNode.view.insertSubview(current, at: 0)
+                glassView = current
             }
-            liquidGlassView.isHidden = false
-            transition.updateFrame(view: liquidGlassView, frame: backgroundFrame)
-            let customTint: UIColor?
-            if backgroundColor != .clear && backgroundColor != presentationData.theme.list.itemBlocksBackgroundColor {
-                customTint = backgroundColor.withMultipliedAlpha(0.25)
+            
+            if backgroundFrame.width > 0.0 && backgroundFrame.height > 0.0 {
+                glassView.isHidden = false
+                transition.updateFrame(view: glassView, frame: backgroundFrame)
+                
+                let tintColor: GlassBackgroundView.TintColor
+                if backgroundColor != .clear && backgroundColor != presentationData.theme.list.itemBlocksBackgroundColor {
+                    tintColor = .init(kind: .custom(style: .default, color: backgroundColor))
+                } else {
+                    tintColor = .init(kind: .panel)
+                }
+                
+                glassView.update(
+                    size: backgroundFrame.size,
+                    cornerRadius: cornerRadius,
+                    isDark: presentationData.theme.overallDarkAppearance,
+                    tintColor: tintColor,
+                    isInteractive: true,
+                    transition: ComponentTransition(transition)
+                )
             } else {
-                customTint = nil
+                glassView.isHidden = true
             }
-            liquidGlassView.update(
-                size: backgroundFrame.size,
-                cornerRadius: cornerRadius,
-                isDark: presentationData.theme.overallDarkAppearance,
-                materialKind: .thin,
-                customTintColor: customTint,
-                transition: transition
-            )
+            self.referenceNode.additionalContextMenuSourceViews = [glassView]
             
             self.textNode.isHidden = true
             let iconY = floorToScreenPixels((size.height - iconSize.height) / 2.0)
@@ -361,9 +372,10 @@ final class PeerInfoHeaderButtonNode: HighlightableButtonNode {
                 transition.updateFrame(view: animatedIconView, frame: iconFrame)
             }
         } else {
-            if let liquidGlassView = self.liquidGlassView {
-                liquidGlassView.isHidden = true
+            if let glassView = self.glassView {
+                glassView.isHidden = true
             }
+            self.referenceNode.additionalContextMenuSourceViews = [self.backgroundView]
             self.textNode.isHidden = false
             transition.updateFrame(node: self.iconNode, frame: CGRect(origin: CGPoint(x: floor((size.width - iconSize.width) / 2.0), y: 1.0), size: iconSize))
             if let animatedIconView = self.animatedIcon?.view {

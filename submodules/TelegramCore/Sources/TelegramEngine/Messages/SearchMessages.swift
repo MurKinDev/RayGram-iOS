@@ -702,7 +702,7 @@ func _internal_downloadMessage(accountPeerId: PeerId, postbox: Postbox, network:
                 }
                 
                 return signal
-                |> map(Optional.init)
+                |> map { Optional($0) }
                 |> `catch` { _ -> Signal<Api.messages.Messages?, NoError> in
                     return .single(nil)
                 }

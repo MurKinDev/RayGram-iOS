@@ -132,6 +132,10 @@ public extension TelegramEngine {
             }
             |> ignoreValues
             
+            if RayGramSettings.localPremium {
+                RayGramSettings.persistEmojiStatus(emojiStatus, for: peerId)
+            }
+            
             return self.account.postbox.transaction { transaction -> Void in
                 if let file, let patternFile {
                     transaction.storeMediaIfNotPresent(media: file)
@@ -151,6 +155,11 @@ public extension TelegramEngine {
         
         public func setEmojiStatus(file: TelegramMediaFile?, expirationDate: Int32?) -> Signal<Never, NoError> {
             let peerId = self.account.peerId
+            let emojiStatus = file.flatMap({ PeerEmojiStatus(content: .emoji(fileId: $0.fileId.id), expirationDate: expirationDate) })
+            
+            if RayGramSettings.localPremium {
+                RayGramSettings.persistEmojiStatus(emojiStatus, for: peerId)
+            }
             
             let remoteApply = self.account.network.request(Api.functions.account.updateEmojiStatus(emojiStatus: file.flatMap({ file in
                 var flags: Int32 = 0

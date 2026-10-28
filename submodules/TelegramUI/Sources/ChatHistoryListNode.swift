@@ -1902,9 +1902,9 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
             } else {
                 reactionSettings = .default
             }
-            var hasPremium = false
+            var hasPremium = RayGramSettings.localPremium
             if case let .user(user) = peer {
-                hasPremium = user.isPremium
+                hasPremium = hasPremium || user.isPremium
             }
             return (reactionSettings.effectiveQuickReaction(hasPremium: hasPremium), areStarsEnabled)
         }
@@ -2037,7 +2037,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
             )
         )
         |> map { setting, peer -> Bool in
-            let isPremium = peer?.isPremium ?? false
+            let isPremium = (peer?.isPremium ?? false) || RayGramSettings.localPremium
             return setting && isPremium
         }
         |> distinctUntilChanged
@@ -2298,7 +2298,7 @@ public final class ChatHistoryListNodeImpl: ASDisplayNode, ChatHistoryNode, Chat
                     isMusicPlaylist = isMusicPlaylistValue
                 }
                 
-                var isPremium = false
+                var isPremium = RayGramSettings.localPremium
                 if case let .user(user) = accountPeer, user.isPremium {
                     isPremium = true
                 }

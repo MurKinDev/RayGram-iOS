@@ -724,7 +724,7 @@ def build(bazel, arguments):
             './DSYMs'
         ], check_result=True)
         os.chdir(previous_directory)
-        shutil.rmtree(artifacts_path + '/DSYMs')
+        shutil.rmtree(artifacts_path + '/DSYMs', ignore_errors=True)
 
 
 def test(bazel, arguments):

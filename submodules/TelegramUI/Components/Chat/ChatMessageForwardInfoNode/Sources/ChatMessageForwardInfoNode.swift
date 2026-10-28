@@ -415,7 +415,9 @@ public class ChatMessageForwardInfoNode: ASDisplayNode {
                     }
                 }
                 
-                if peer.isFake {
+                if RayGramSettings.isDeveloper(enginePeer: peer) {
+                    currentCredibilityIconImage = PresentationResourcesChatList.devBadgeImage()
+                } else if peer.isFake {
                     switch type {
                     case let .bubble(incoming):
                         currentCredibilityIconImage = PresentationResourcesChatList.fakeIcon(presentationData.theme.theme, strings: presentationData.strings, type: incoming ? .regular : .outgoing)

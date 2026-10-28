@@ -7424,10 +7424,11 @@ public final class StoryItemSetContainerComponent: Component {
                             }
                             self.beginPictureInPicture()
                         })))
-                    } else if !component.slice.item.storyItem.isForwardingDisabled {
+                    } else if !component.slice.item.storyItem.isForwardingDisabled || RayGramSettings.bypassNoForwards || RayGramSettings.unlockStoryFeatures || RayGramSettings.localPremium {
                         let saveText: String = component.strings.Story_Context_SaveToGallery
+                        let canSave = accountUser.isPremium || RayGramSettings.localPremium || RayGramSettings.unlockStoryFeatures
                         items.append(.action(ContextMenuActionItem(text: saveText, icon: { theme in
-                            return generateTintedImage(image: UIImage(bundleImageName: accountUser.isPremium ? "Chat/Context Menu/Download" : "Chat/Context Menu/DownloadLocked"), color: theme.contextMenu.primaryColor)
+                            return generateTintedImage(image: UIImage(bundleImageName: canSave ? "Chat/Context Menu/Download" : "Chat/Context Menu/DownloadLocked"), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, a in
                             a(.default)
                             
@@ -7435,7 +7436,7 @@ public final class StoryItemSetContainerComponent: Component {
                                 return
                             }
                             
-                            if accountUser.isPremium {
+                            if canSave {
                                 self.requestSave()
                             } else {
                                 self.presentSaveUpgradeScreen()
@@ -7444,15 +7445,16 @@ public final class StoryItemSetContainerComponent: Component {
                     }
                     
                     if case .user = component.slice.effectivePeer, !isLiveStream {
+                        let canStealth = accountUser.isPremium || RayGramSettings.localPremium || RayGramSettings.unlockStoryFeatures
                         items.append(.action(ContextMenuActionItem(text: component.strings.Story_ContextStealthMode, icon: { theme in
-                            return generateTintedImage(image: UIImage(bundleImageName: accountUser.isPremium ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"), color: theme.contextMenu.primaryColor)
+                            return generateTintedImage(image: UIImage(bundleImageName: canStealth ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"), color: theme.contextMenu.primaryColor)
                         }, action: { [weak self] _, a in
                             a(.default)
                             
                             guard let self else {
                                 return
                             }
-                            if accountUser.isPremium {
+                            if canStealth {
                                 self.sendMessageContext.requestStealthMode(view: self)
                             } else {
                                 self.presentStealthModeUpgradeScreen()

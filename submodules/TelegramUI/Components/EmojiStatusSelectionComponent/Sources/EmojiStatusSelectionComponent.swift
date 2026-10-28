@@ -515,7 +515,7 @@ public final class EmojiStatusSelectionController: ViewController {
                                     guard case let .user(user) = peer else {
                                         return false
                                     }
-                                    return user.isPremium
+                                    return user.isPremium || RayGramSettings.localPremium
                                 }
                                 |> distinctUntilChanged
 
@@ -1385,7 +1385,7 @@ public final class EmojiStatusSelectionController: ViewController {
                             guard let self else {
                                 return
                             }
-                            if !self.context.isPremium || count < 3, let pushController = controller.pushController {
+                            if (!self.context.isPremium && !RayGramSettings.localPremium) || count < 3, let pushController = controller.pushController {
                                 let controller = self.context.sharedContext.makeGiftWearPreviewScreen(context: self.context, gift: .unique(gift), attributes: nil)
                                 pushController(controller)
                             } else {

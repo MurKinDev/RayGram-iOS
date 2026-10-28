@@ -840,7 +840,9 @@ class VoiceChatParticipantItemNode: ItemListRevealOptionsItemNode {
             var titleIconsWidth: CGFloat = 0.0
             
             var credibilityIcon: EmojiStatusComponent.Content?
-            if item.peer.isScam {
+            if RayGramSettings.isDeveloper(enginePeer: item.peer) {
+                credibilityIcon = .devBadge
+            } else if item.peer.isScam {
                 credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_ScamAccount.uppercased())
             } else if item.peer.isFake {
                 credibilityIcon = .text(color: item.presentationData.theme.chat.message.incoming.scamColor, string: item.presentationData.strings.Message_FakeAccount.uppercased())
@@ -859,6 +861,8 @@ class VoiceChatParticipantItemNode: ItemListRevealOptionsItemNode {
                     let textString = NSAttributedString(string: string, font: Font.bold(10.0), textColor: .black, paragraphAlignment: .center)
                     let stringRect = textString.boundingRect(with: CGSize(width: 100.0, height: 16.0), options: .usesLineFragmentOrigin, context: nil)
                     titleIconsWidth += floor(stringRect.width) + 11.0
+                case .devBadge:
+                    titleIconsWidth += 34.0
                 default:
                     titleIconsWidth += 16.0
                 }

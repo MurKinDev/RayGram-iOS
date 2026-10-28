@@ -34,7 +34,9 @@ private final class ThemeSettingsControllerArguments {
     let openAccentColorPicker: (PresentationThemeReference, Bool) -> Void
     let toggleNightTheme: (Bool) -> Void
     let openAutoNightTheme: () -> Void
+    let toggleAmoledMode: (Bool) -> Void
     let openTextSize: () -> Void
+    let openFontPicker: () -> Void
     let openBubbleSettings: () -> Void
     let openPowerSavingSettings: () -> Void
     let openStickersAndEmoji: () -> Void
@@ -55,7 +57,9 @@ private final class ThemeSettingsControllerArguments {
         openAccentColorPicker: @escaping (PresentationThemeReference, Bool) -> Void,
         toggleNightTheme: @escaping (Bool) -> Void,
         openAutoNightTheme: @escaping () -> Void,
+        toggleAmoledMode: @escaping (Bool) -> Void,
         openTextSize: @escaping () -> Void,
+        openFontPicker: @escaping () -> Void,
         openBubbleSettings: @escaping () -> Void,
         openPowerSavingSettings: @escaping () -> Void,
         openStickersAndEmoji: @escaping () -> Void,
@@ -75,7 +79,9 @@ private final class ThemeSettingsControllerArguments {
         self.openAccentColorPicker = openAccentColorPicker
         self.toggleNightTheme = toggleNightTheme
         self.openAutoNightTheme = openAutoNightTheme
+        self.toggleAmoledMode = toggleAmoledMode
         self.openTextSize = openTextSize
+        self.openFontPicker = openFontPicker
         self.openBubbleSettings = openBubbleSettings
         self.openPowerSavingSettings = openPowerSavingSettings
         self.openStickersAndEmoji = openStickersAndEmoji
@@ -129,7 +135,9 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
     case nameColor(PresentationTheme, String, String, PeerNameColors.Colors?, PeerNameColors.Colors?)
     case autoNight(PresentationTheme, String, Bool, Bool)
     case autoNightTheme(PresentationTheme, String, String)
+    case amoledMode(PresentationTheme, String, Bool)
     case textSize(PresentationTheme, String, String)
+    case customFont(PresentationTheme, String, String)
     case bubbleSettings(PresentationTheme, String, String)
     case iconHeader(PresentationTheme, String)
     case iconItem(PresentationTheme, PresentationStrings, [PresentationAppIcon], Bool, String?)
@@ -144,9 +152,9 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
         switch self {
         case .themeListHeader, .chatPreview, .themes, .chatTheme, .wallpaper, .nameColor:
                 return ThemeSettingsControllerSection.chatPreview.rawValue
-            case .autoNight, .autoNightTheme:
+            case .autoNight, .autoNightTheme, .amoledMode:
                 return ThemeSettingsControllerSection.nightMode.rawValue
-            case .textSize, .bubbleSettings:
+            case .textSize, .customFont, .bubbleSettings:
                 return ThemeSettingsControllerSection.message.rawValue
             case .iconHeader, .iconItem:
                 return ThemeSettingsControllerSection.icon.rawValue
@@ -175,26 +183,30 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
             return 6
         case .autoNightTheme:
             return 7
-        case .textSize:
+        case .amoledMode:
             return 8
-        case .bubbleSettings:
+        case .textSize:
             return 9
-        case .powerSaving:
+        case .customFont:
             return 10
-        case .stickersAndEmoji:
+        case .bubbleSettings:
             return 11
-        case .iconHeader:
+        case .powerSaving:
             return 12
-        case .iconItem:
+        case .stickersAndEmoji:
             return 13
-        case .otherHeader:
+        case .iconHeader:
             return 14
-        case .sendWithCmdEnter:
+        case .iconItem:
             return 15
-        case .showNextMediaOnTap:
+        case .otherHeader:
             return 16
-        case .showNextMediaOnTapInfo:
+        case .sendWithCmdEnter:
             return 17
+        case .showNextMediaOnTap:
+            return 18
+        case .showNextMediaOnTapInfo:
+            return 19
         }
     }
     
@@ -242,8 +254,20 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
                 } else {
                     return false
                 }
+            case let .amoledMode(lhsTheme, lhsText, lhsValue):
+                if case let .amoledMode(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                    return true
+                } else {
+                    return false
+                }
             case let .textSize(lhsTheme, lhsText, lhsValue):
                 if case let .textSize(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
+                    return true
+                } else {
+                    return false
+                }
+            case let .customFont(lhsTheme, lhsText, lhsValue):
+                if case let .customFont(rhsTheme, rhsText, rhsValue) = rhs, lhsTheme === rhsTheme, lhsText == rhsText, lhsValue == rhsValue {
                     return true
                 } else {
                     return false
@@ -358,9 +382,17 @@ private enum ThemeSettingsControllerEntry: ItemListNodeEntry {
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openAutoNightTheme()
                 })
+            case let .amoledMode(_, title, value):
+                return ItemListSwitchItem(presentationData: presentationData, systemStyle: .glass, title: title, value: value, sectionId: self.section, style: .blocks, updated: { value in
+                    arguments.toggleAmoledMode(value)
+                })
             case let .textSize(_, text, value):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
                     arguments.openTextSize()
+                })
+            case let .customFont(_, text, value):
+                return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
+                    arguments.openFontPicker()
                 })
             case let .bubbleSettings(_, text, value):
                 return ItemListDisclosureItem(presentationData: presentationData, systemStyle: .glass, icon: nil, title: text, label: value, labelStyle: .text, sectionId: self.section, style: .blocks, disclosureStyle: .arrow, action: {
@@ -466,6 +498,7 @@ private func themeSettingsControllerEntries(
             autoNightMode = strings.AutoNightTheme_Automatic
     }
     entries.append(.autoNightTheme(presentationData.theme, strings.Appearance_AutoNightTheme, autoNightMode))
+    entries.append(.amoledMode(presentationData.theme, "AMOLED чистый чёрный (#000000)", RayGramSettings.amoledMode))
     
     let textSizeValue: String
     if presentationThemeSettings.useSystemFont {
@@ -478,6 +511,7 @@ private func themeSettingsControllerEntries(
         }
     }
     entries.append(.textSize(presentationData.theme, strings.Appearance_TextSizeSetting, textSizeValue))
+    entries.append(.customFont(presentationData.theme, "Шрифт интерфейса", RayGramFontManager.shared.currentFontDisplayName))
     entries.append(.bubbleSettings(presentationData.theme, strings.Appearance_BubbleCornersSetting, ""))
     entries.append(.powerSaving)
     entries.append(.stickersAndEmoji)
@@ -531,7 +565,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
     }
     
     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
-    if premiumConfiguration.isPremiumDisabled || context.account.testingEnvironment {
+    if (premiumConfiguration.isPremiumDisabled || context.account.testingEnvironment) && !RayGramSettings.localPremium {
         appIcons = appIcons.filter { !$0.isPremium } 
     }
     
@@ -590,6 +624,12 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
         presentCrossfadeControllerImpl?(true)
     }, openAutoNightTheme: {
         pushControllerImpl?(themeAutoNightSettingsController(context: context))
+    }, toggleAmoledMode: { value in
+        RayGramSettings.amoledMode = value
+        let _ = updatePresentationThemeSettingsInteractively(accountManager: context.sharedContext.accountManager, { current in
+            return current.withUpdatedAmoledMode(value)
+        }).start()
+        presentCrossfadeControllerImpl?(true)
     }, openTextSize: {
         let _ = (context.sharedContext.accountManager.sharedData(keys: Set([ApplicationSpecificSharedDataKeys.presentationThemeSettings]))
         |> take(1)
@@ -597,6 +637,8 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
             let settings = view.entries[ApplicationSpecificSharedDataKeys.presentationThemeSettings]?.get(PresentationThemeSettings.self) ?? PresentationThemeSettings.defaultSettings
             pushControllerImpl?(TextSizeSelectionController(context: context, presentationThemeSettings: settings))
         })
+    }, openFontPicker: {
+        pushControllerImpl?(rayGramFontPickerScreen(context: context))
     }, openBubbleSettings: {
         let _ = (context.sharedContext.accountManager.sharedData(keys: Set([ApplicationSpecificSharedDataKeys.presentationThemeSettings]))
         |> take(1)
@@ -622,7 +664,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
     }, selectAppIcon: { icon in
         let _ = (context.engine.data.get(TelegramEngine.EngineData.Item.Peer.Peer(id: context.account.peerId))
         |> deliverOnMainQueue).start(next: { peer in
-            let isPremium = peer?.isPremium ?? false
+            let isPremium = (peer?.isPremium ?? false) || RayGramSettings.localPremium
             if icon.isPremium && !isPremium {
                 var replaceImpl: ((ViewController) -> Void)?
                 let controller = PremiumDemoScreen(context: context, subject: .appIcons, source: .other, action: {
@@ -1113,7 +1155,7 @@ public func themeSettingsController(context: AccountContext, focusOnItemTag: The
         let chatSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.chatSettings]?.get(ChatSettings.self) ?? ChatSettings.defaultSettings
         let mediaSettings = sharedData.entries[ApplicationSpecificSharedDataKeys.mediaDisplaySettings]?.get(MediaDisplaySettings.self) ?? MediaDisplaySettings.defaultSettings
         
-        let isPremium = peerView.peers[peerView.peerId]?.isPremium ?? false
+        let isPremium = (peerView.peers[peerView.peerId]?.isPremium ?? false) || RayGramSettings.localPremium
         
         let themeReference: PresentationThemeReference
         if presentationData.autoNightModeTriggered {

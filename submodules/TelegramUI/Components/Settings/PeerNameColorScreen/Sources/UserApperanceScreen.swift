@@ -729,7 +729,7 @@ final class UserAppearanceScreenComponent: Component {
             if resolvedState.changes.isEmpty {
                 self.environment?.controller()?.dismiss()
                 return
-            } else if !component.context.isPremium {
+            } else if !component.context.isPremium && !RayGramSettings.localPremium {
                 HapticFeedback().impact(.light)
                 
                 let toastController = UndoOverlayController(

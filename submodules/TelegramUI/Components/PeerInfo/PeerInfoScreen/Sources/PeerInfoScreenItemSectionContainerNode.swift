@@ -5,6 +5,7 @@ import AsyncDisplayKit
 import AccountContext
 import TelegramPresentationData
 import ComponentFlow
+import ComponentDisplayAdapters
 import GlassBackgroundComponent
 import TelegramCore
 
@@ -13,7 +14,7 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
     private let topSeparatorNode: ASDisplayNode
     private let bottomSeparatorNode: ASDisplayNode
     private let itemContainerNode: ASDisplayNode
-    private var liquidGlassView: PeerInfoLiquidGlassView?
+    private var glassView: GlassBackgroundView?
     
     private var currentItems: [PeerInfoScreenItem] = []
     var itemNodes: [AnyHashable: PeerInfoScreenItemNode] = [:]
@@ -40,7 +41,8 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
     }
     
     func update(context: AccountContext, width: CGFloat, safeInsets: UIEdgeInsets, hasCorners: Bool, presentationData: PresentationData, items: [PeerInfoScreenItem], isLiquidGlass: Bool = false, transition: ContainedViewLayoutTransition) -> CGFloat {
-        if isLiquidGlass {
+        let isCreatorBadgeSection = items.count == 1 && items.first is PeerInfoScreenCreatorBadgeItem
+        if isLiquidGlass || isCreatorBadgeSection {
             self.backgroundNode.isHidden = true
             self.topSeparatorNode.isHidden = true
             self.bottomSeparatorNode.isHidden = true
@@ -138,26 +140,29 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
         
         if isLiquidGlass {
             let cornerRadius: CGFloat = 26.0
-            let liquidGlassView: PeerInfoLiquidGlassView
-            if let current = self.liquidGlassView {
-                liquidGlassView = current
+            let glassView: GlassBackgroundView
+            if let current = self.glassView {
+                glassView = current
             } else {
-                liquidGlassView = PeerInfoLiquidGlassView()
-                self.liquidGlassView = liquidGlassView
-                self.view.insertSubview(liquidGlassView, at: 0)
+                let current = GlassBackgroundView()
+                current.isUserInteractionEnabled = false
+                self.glassView = current
+                self.view.insertSubview(current, at: 0)
+                glassView = current
             }
-            if backgroundFrame.height > 0.0 {
-                liquidGlassView.isHidden = false
-                transition.updateFrame(view: liquidGlassView, frame: backgroundFrame)
-                liquidGlassView.update(
+            if backgroundFrame.width > 0.0 && backgroundFrame.height > 0.0 {
+                glassView.isHidden = false
+                transition.updateFrame(view: glassView, frame: backgroundFrame)
+                glassView.update(
                     size: backgroundFrame.size,
                     cornerRadius: cornerRadius,
                     isDark: presentationData.theme.overallDarkAppearance,
-                    materialKind: .thin,
-                    transition: transition
+                    tintColor: .init(kind: .panel),
+                    isInteractive: false,
+                    transition: ComponentTransition(transition)
                 )
             } else {
-                liquidGlassView.isHidden = true
+                glassView.isHidden = true
             }
             
             if hasCorners && backgroundFrame.height > 0.0 {
@@ -174,8 +179,8 @@ final class PeerInfoScreenItemSectionContainerNode: ASDisplayNode {
             }
         } else {
             self.itemContainerNode.layer.mask = nil
-            if let liquidGlassView = self.liquidGlassView {
-                liquidGlassView.isHidden = true
+            if let glassView = self.glassView {
+                glassView.isHidden = true
             }
         }
         

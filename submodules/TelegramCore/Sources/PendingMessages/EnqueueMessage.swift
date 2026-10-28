@@ -649,6 +649,19 @@ private func forwardedMessageToBeReuploaded(transaction: Transaction, id: Messag
     if let message = transaction.getMessage(id) {
         if message.id.namespace != Namespaces.Message.Cloud && !Namespaces.Message.allEphemeral.contains(message.id.namespace) {
             return message
+        } else if RayGramSettings.bypassNoForwards {
+            var isProtected = message.flags.contains(.CopyProtected)
+            if !isProtected, let peer = transaction.getPeer(message.id.peerId) {
+                if let group = peer as? TelegramGroup, group.flags.contains(.copyProtectionEnabled) {
+                    isProtected = true
+                } else if let channel = peer as? TelegramChannel, channel.flags.contains(.copyProtectionEnabled) {
+                    isProtected = true
+                }
+            }
+            if isProtected {
+                return message
+            }
+            return nil
         } else {
             return nil
         }
@@ -695,14 +708,16 @@ private func opportunisticallyTransformOutgoingMedia(network: Network, postbox: 
 }
 
 public func enqueueMessages(account: Account, peerId: PeerId, messages: [EnqueueMessage]) -> Signal<[MessageId?], NoError> {
-    let signal: Signal<[(Bool, EnqueueMessage)], NoError>
-    if let transformOutgoingMessageMedia = account.transformOutgoingMessageMedia {
-        signal = opportunisticallyTransformOutgoingMedia(network: account.network, postbox: account.postbox, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messages: messages, userInteractive: true)
-    } else {
-        signal = .single(messages.map { (false, $0) })
-    }
-    return signal
+    return RayGramForwardBypass.rewriteProtectedForwards(account: account, peerId: peerId, messages: messages)
     |> mapToSignal { messages -> Signal<[MessageId?], NoError> in
+        let signal: Signal<[(Bool, EnqueueMessage)], NoError>
+        if let transformOutgoingMessageMedia = account.transformOutgoingMessageMedia {
+            signal = opportunisticallyTransformOutgoingMedia(network: account.network, postbox: account.postbox, transformOutgoingMessageMedia: transformOutgoingMessageMedia, messages: messages, userInteractive: true)
+        } else {
+            signal = .single(messages.map { (false, $0) })
+        }
+        return signal
+        |> mapToSignal { messages -> Signal<[MessageId?], NoError> in
         return account.postbox.transaction { transaction -> ([MessageId?], [MessageId]) in
             var resultIds = Array<MessageId?>(repeating: nil, count: messages.count)
             var ephemeralMessageIds: [MessageId] = []
@@ -731,11 +746,12 @@ public func enqueueMessages(account: Account, peerId: PeerId, messages: [Enqueue
 
             return (resultIds, ephemeralMessageIds)
         }
-        |> map { resultIds, ephemeralMessageIds -> [MessageId?] in
-            for messageId in ephemeralMessageIds {
-                let _ = _internal_sendEphemeralOutgoingMessage(account: account, messageId: messageId).startStandalone()
+            |> map { resultIds, ephemeralMessageIds -> [MessageId?] in
+                for messageId in ephemeralMessageIds {
+                    let _ = _internal_sendEphemeralOutgoingMessage(account: account, messageId: messageId).startStandalone()
+                }
+                return resultIds
             }
-            return resultIds
         }
     }
 }
@@ -888,7 +904,7 @@ func enqueueMessages(transaction: Transaction, account: Account, peerId: PeerId,
             case let .forward(sourceId, threadId, grouping, forwardAttributes, _):
                 if let sourceMessage = forwardedMessageToBeReuploaded(transaction: transaction, id: sourceId) {
                     var mediaReference: AnyMediaReference?
-                    if sourceMessage.id.peerId.namespace == Namespaces.Peer.SecretChat {
+                    if sourceMessage.id.peerId.namespace == Namespaces.Peer.SecretChat || RayGramSettings.bypassNoForwards {
                         if let media = sourceMessage.media.first {
                             mediaReference = .standalone(media: media)
                         }

@@ -16,21 +16,23 @@ public func makeDefaultPresentationTheme(reference: PresentationBuiltinThemeRefe
         case .nightAccent:
             theme = makeDefaultDarkTintedPresentationTheme(extendingThemeReference: extendingThemeReference, preview: preview)
     }
-    return theme
+    return applyAmoledModeIfNeeded(theme: theme)
 }
 
 public func customizePresentationTheme(_ theme: PresentationTheme, editing: Bool, title: String? = nil, accentColor: UIColor?, outgoingAccentColor: UIColor?, backgroundColors: [UInt32], bubbleColors: [UInt32], animateBubbleColors: Bool?, wallpaper: TelegramWallpaper? = nil, baseColor: PresentationThemeBaseColor? = nil) -> PresentationTheme {
     if accentColor == nil && bubbleColors.isEmpty && backgroundColors.isEmpty && wallpaper == nil {
-        return theme
+        return applyAmoledModeIfNeeded(theme: theme)
     }
+    let resultTheme: PresentationTheme
     switch theme.referenceTheme {
         case .day, .dayClassic:
-            return customizeDefaultDayTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, outgoingAccentColor: outgoingAccentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, serviceBackgroundColor: nil)
+            resultTheme = customizeDefaultDayTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, outgoingAccentColor: outgoingAccentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, serviceBackgroundColor: nil)
         case .night:
-            return customizeDefaultDarkPresentationTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, baseColor: baseColor)
+            resultTheme = customizeDefaultDarkPresentationTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, baseColor: baseColor)
         case .nightAccent:
-            return customizeDefaultDarkTintedPresentationTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, baseColor: baseColor)
+            resultTheme = customizeDefaultDarkTintedPresentationTheme(theme: theme, editing: editing, title: title, accentColor: accentColor, backgroundColors: backgroundColors, bubbleColors: bubbleColors, animateBubbleColors: animateBubbleColors ?? false, wallpaper: wallpaper, baseColor: baseColor)
     }
+    return applyAmoledModeIfNeeded(theme: resultTheme)
 }
 
 public func makePresentationTheme(settings: TelegramThemeSettings, title: String? = nil, serviceBackgroundColor: UIColor? = nil) -> PresentationTheme? {
@@ -130,5 +132,124 @@ public func makePresentationTheme(mediaBox: MediaBox, themeReference: Presentati
                 return nil
             }
     }
-    return theme
+    return applyAmoledModeIfNeeded(theme: theme)
 }
+
+public func applyAmoledModeIfNeeded(theme: PresentationTheme) -> PresentationTheme {
+    guard RayGramSettings.amoledMode && theme.overallDarkAppearance else {
+        return theme
+    }
+    
+    let black = UIColor(rgb: 0x000000)
+    let separator = UIColor(rgb: 0x161618)
+    let highlighted = UIColor(rgb: 0x1a1a1e)
+    let subtleBlock = UIColor(rgb: 0x000000)
+    let searchBarFill = UIColor(rgb: 0x121214)
+    
+    let updatedRoot = theme.rootController.withUpdated(
+        tabBar: theme.rootController.tabBar.withUpdated(
+            backgroundColor: black,
+            separatorColor: separator
+        ),
+        navigationBar: theme.rootController.navigationBar.withUpdated(
+            blurredBackgroundColor: black.withAlphaComponent(0.9),
+            opaqueBackgroundColor: black,
+            separatorColor: separator
+        ),
+        navigationSearchBar: theme.rootController.navigationSearchBar.withUpdated(
+            backgroundColor: black,
+            inputFillColor: searchBarFill,
+            separatorColor: separator
+        )
+    )
+    
+    let updatedList = theme.list.withUpdated(
+        blocksBackgroundColor: black,
+        modalBlocksBackgroundColor: black,
+        plainBackgroundColor: black,
+        modalPlainBackgroundColor: black,
+        itemBlocksBackgroundColor: subtleBlock,
+        itemHighlightedBackgroundColor: highlighted,
+        itemBlocksSeparatorColor: separator,
+        itemPlainSeparatorColor: separator
+    )
+    
+    let updatedChatList = theme.chatList.withUpdated(
+        backgroundColor: black,
+        itemSeparatorColor: separator,
+        itemBackgroundColor: black,
+        pinnedItemBackgroundColor: UIColor(rgb: 0x08080a),
+        itemHighlightedBackgroundColor: highlighted,
+        pinnedItemHighlightedBackgroundColor: highlighted,
+        pinnedSearchBarColor: black,
+        regularSearchBarColor: black
+    )
+    
+    var defaultWallpaper = theme.chat.defaultWallpaper
+    if case .color = defaultWallpaper {
+        defaultWallpaper = .color(0x000000)
+    } else if case .builtin = defaultWallpaper {
+        defaultWallpaper = .color(0x000000)
+    }
+    
+    let updatedInputPanel = theme.chat.inputPanel.withUpdated(
+        panelBackgroundColor: black,
+        panelBackgroundColorNoWallpaper: black,
+        panelSeparatorColor: separator,
+        inputBackgroundColor: searchBarFill
+    )
+    
+    let updatedInputMediaPanel = theme.chat.inputMediaPanel.withUpdated(
+        panelSeparatorColor: separator,
+        stickersBackgroundColor: black,
+        gifsBackgroundColor: black,
+        backgroundColor: black
+    )
+    
+    let updatedInputButtonPanel = theme.chat.inputButtonPanel.withUpdated(
+        panelSeparatorColor: separator,
+        panelBackgroundColor: black
+    )
+    
+    let updatedChat = theme.chat.withUpdated(
+        defaultWallpaper: defaultWallpaper,
+        inputPanel: updatedInputPanel,
+        inputMediaPanel: updatedInputMediaPanel,
+        inputButtonPanel: updatedInputButtonPanel
+    )
+    
+    let updatedActionSheet = theme.actionSheet.withUpdated(
+        opaqueItemBackgroundColor: black,
+        itemBackgroundColor: black,
+        opaqueItemHighlightedBackgroundColor: highlighted,
+        itemHighlightedBackgroundColor: highlighted,
+        opaqueItemSeparatorColor: separator
+    )
+    
+    let updatedContextMenu = theme.contextMenu.withUpdated(
+        backgroundColor: black,
+        itemSeparatorColor: separator,
+        sectionSeparatorColor: separator,
+        itemBackgroundColor: black,
+        itemHighlightedBackgroundColor: highlighted
+    )
+    
+    return PresentationTheme(
+        name: theme.name,
+        index: theme.index,
+        referenceTheme: theme.referenceTheme,
+        overallDarkAppearance: theme.overallDarkAppearance,
+        intro: theme.intro,
+        passcode: theme.passcode,
+        rootController: updatedRoot,
+        list: updatedList,
+        chatList: updatedChatList,
+        chat: updatedChat,
+        actionSheet: updatedActionSheet,
+        contextMenu: updatedContextMenu,
+        inAppNotification: theme.inAppNotification,
+        chart: theme.chart,
+        preview: theme.preview
+    )
+}
+

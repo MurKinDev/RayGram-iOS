@@ -433,7 +433,10 @@ public class ItemListAvatarAndNameInfoItemNode: ListViewItemNode, ItemListItemNo
             var credibilityIconImage: UIImage?
             var credibilityIconOffset: CGFloat = 4.0
             if let peer = item.peer {
-                if peer.isScam {
+                if RayGramSettings.isDeveloper(enginePeer: peer) {
+                    credibilityIconImage = PresentationResourcesChatList.devBadgeImage()
+                    credibilityIconOffset = 4.0
+                } else if peer.isScam {
                     credibilityIconImage = PresentationResourcesChatList.scamIcon(item.presentationData.theme, strings: item.presentationData.strings, type: .regular)
                     credibilityIconOffset = 6.0
                 } else if peer.isFake {

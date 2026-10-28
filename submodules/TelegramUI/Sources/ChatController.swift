@@ -6112,6 +6112,44 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 strongSelf.push(statsController)
                             })))
                         }
+                        let peerId = peer.id
+                        let isRussian = strongSelf.presentationData.strings.baseLanguageCode == "ru"
+                        let currentGhost = RayGramSettings.ghostOverride(for: peerId)
+                        let ghostStatus: String
+                        switch currentGhost {
+                        case .default:
+                            ghostStatus = isRussian ? "По умолчанию" : "Default"
+                        case .enabled:
+                            ghostStatus = isRussian ? "Включен" : "Enabled"
+                        case .disabled:
+                            ghostStatus = isRussian ? "Выключен" : "Disabled"
+                        }
+                        let ghostTitle = isRussian ? "Режим невидимки: \(ghostStatus)" : "Ghost Mode: \(ghostStatus)"
+                        
+                        items.append(.action(ContextMenuActionItem(text: ghostTitle, icon: { theme in
+                            let isEffectiveGhost = (currentGhost == .enabled || (currentGhost == .default && RayGramSettings.ghostReadMessages))
+                            let iconName = isEffectiveGhost ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"
+                            return generateTintedImage(image: UIImage(bundleImageName: iconName), color: theme.actionSheet.primaryTextColor)
+                        }, action: { c, _ in
+                            var subItems: [ContextMenuItem] = []
+                            let options: [(RayGramSettings.GhostModeOverride, String)] = [
+                                (.default, isRussian ? "По умолчанию (настройки RayGram)" : "Default (RayGram Settings)"),
+                                (.enabled, isRussian ? "Всегда включен (скрывать)" : "Always Enabled (Hide)"),
+                                (.disabled, isRussian ? "Всегда выключен (читать/писать)" : "Always Disabled (Normal)")
+                            ]
+                            for (opt, title) in options {
+                                let isSelected = currentGhost == opt
+                                let checkmark = isSelected ? "✓ " : ""
+                                subItems.append(.action(ContextMenuActionItem(text: "\(checkmark)\(title)", icon: { _ in nil }, action: { _, f in
+                                    f(.default)
+                                    RayGramSettings.setGhostOverride(opt, for: peerId)
+                                    let toastText = isRussian ? "Режим невидимки: \(title)" : "Ghost Mode: \(title)"
+                                    self?.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .universal(animation: "anim_profileunmute", scale: 0.075, colors: [:], title: nil, text: toastText, customUndoText: nil, timeout: nil), elevatedLayout: false, animateInAsReplacement: true, action: { _ in return false }), in: .current)
+                                })))
+                            }
+                            c?.setItems(.single(ContextController.Items(content: .list(subItems))), minHeight: nil, animated: true)
+                        })))
+                        
                         items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.Conversation_Search, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Search"), color: theme.actionSheet.primaryTextColor)
                         }, action: { _, f in
@@ -6361,6 +6399,43 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                                 }
                             })))
                         }
+                        
+                        let isRussian = strongSelf.presentationData.strings.baseLanguageCode == "ru"
+                        let currentGhost = RayGramSettings.ghostOverride(for: peerId)
+                        let ghostStatus: String
+                        switch currentGhost {
+                        case .default:
+                            ghostStatus = isRussian ? "По умолчанию" : "Default"
+                        case .enabled:
+                            ghostStatus = isRussian ? "Включен" : "Enabled"
+                        case .disabled:
+                            ghostStatus = isRussian ? "Выключен" : "Disabled"
+                        }
+                        let ghostTitle = isRussian ? "Режим невидимки: \(ghostStatus)" : "Ghost Mode: \(ghostStatus)"
+                        
+                        items.append(.action(ContextMenuActionItem(text: ghostTitle, icon: { theme in
+                            let isEffectiveGhost = (currentGhost == .enabled || (currentGhost == .default && RayGramSettings.ghostReadMessages))
+                            let iconName = isEffectiveGhost ? "Chat/Context Menu/Eye" : "Chat/Context Menu/EyeLocked"
+                            return generateTintedImage(image: UIImage(bundleImageName: iconName), color: theme.actionSheet.primaryTextColor)
+                        }, action: { c, _ in
+                            var subItems: [ContextMenuItem] = []
+                            let options: [(RayGramSettings.GhostModeOverride, String)] = [
+                                (.default, isRussian ? "По умолчанию (настройки RayGram)" : "Default (RayGram Settings)"),
+                                (.enabled, isRussian ? "Всегда включен (скрывать)" : "Always Enabled (Hide)"),
+                                (.disabled, isRussian ? "Всегда выключен (читать/писать)" : "Always Disabled (Normal)")
+                            ]
+                            for (opt, title) in options {
+                                let isSelected = currentGhost == opt
+                                let checkmark = isSelected ? "✓ " : ""
+                                subItems.append(.action(ContextMenuActionItem(text: "\(checkmark)\(title)", icon: { _ in nil }, action: { _, f in
+                                    f(.default)
+                                    RayGramSettings.setGhostOverride(opt, for: peerId)
+                                    let toastText = isRussian ? "Режим невидимки: \(title)" : "Ghost Mode: \(title)"
+                                    self?.present(UndoOverlayController(presentationData: strongSelf.presentationData, content: .universal(animation: "anim_profileunmute", scale: 0.075, colors: [:], title: nil, text: toastText, customUndoText: nil, timeout: nil), elevatedLayout: false, animateInAsReplacement: true, action: { _ in return false }), in: .current)
+                                })))
+                            }
+                            c?.setItems(.single(ContextController.Items(content: .list(subItems))), minHeight: nil, animated: true)
+                        })))
                         
                         items.append(.action(ContextMenuActionItem(text: strongSelf.presentationData.strings.Conversation_Search, icon: { theme in
                             return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Search"), color: theme.actionSheet.primaryTextColor)
@@ -7795,6 +7870,9 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                     // Returning false keeps the screen-recording poll alive until the chat is actually
                     // visible in the foreground, so a recording started behind a covering screen or while
                     // backgrounded is still reported once the chat comes into view.
+                    if RayGramSettings.antiScreenshot {
+                        return false
+                    }
                     if let strongSelf = self, strongSelf.isApplicationInForegroundValue, strongSelf.traceVisibility() {
                         let _ = strongSelf.context.engine.messages.addSecretChatMessageScreenshot(peerId: peerId).startStandalone()
                         return true
@@ -7822,7 +7900,7 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 })
             } else if peerId.namespace == Namespaces.Peer.CloudUser {
                 self.screenCaptureManager = ScreenCaptureDetectionManager(check: { [weak self] in
-                    guard let self else {
+                    guard let self, !RayGramSettings.antiScreenshot else {
                         return false
                     }
                     

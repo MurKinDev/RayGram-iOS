@@ -1284,6 +1284,7 @@ public class Account {
         self.network = network
         self.networkArguments = networkArguments
         self.peerId = peerId
+        RayGramSettings.registerAccountPeerId(peerId)
         
         self.auxiliaryMethods = auxiliaryMethods
         self.supplementary = supplementary

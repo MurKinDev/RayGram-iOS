@@ -411,7 +411,7 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
         TelegramEngine.EngineData.Item.Configuration.App()
     )
     |> map { accountPeer, appConfig -> Bool in
-        if let accountPeer, accountPeer.isPremium {
+        if let accountPeer, accountPeer.isPremium || RayGramSettings.localPremium {
             return true
         }
         if let data = appConfig.data, let setting = data["new_noncontact_peers_require_premium_without_ownpremium"] as? Bool {
@@ -433,7 +433,7 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
         
         let title: ItemListControllerTitle = .text(presentationData.strings.Privacy_Messages_Title)
         
-        let entries: [GlobalAutoremoveEntry] = incomingMessagePrivacyScreenEntries(presentationData: presentationData, state: state, enableSetting: enableSetting, isPremium: context.isPremium, configuration: configuration)
+        let entries: [GlobalAutoremoveEntry] = incomingMessagePrivacyScreenEntries(presentationData: presentationData, state: state, enableSetting: enableSetting, isPremium: context.isPremium || RayGramSettings.localPremium, configuration: configuration)
         
         let animateChanges = false
         
@@ -471,7 +471,7 @@ public func incomingMessagePrivacyScreen(context: AccountContext, value: GlobalP
     }
     controller.attemptNavigation = { _ in
         let updatedValue = stateValue.with({ $0 }).updatedValue
-        if !context.isPremium, case .paidMessages = updatedValue {
+        if !context.isPremium && !RayGramSettings.localPremium, case .paidMessages = updatedValue {
             
         } else {
             update(updatedValue)

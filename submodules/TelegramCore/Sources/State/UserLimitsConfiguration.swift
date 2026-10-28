@@ -135,10 +135,34 @@ public struct UserLimitsConfiguration: Equatable {
 
 extension UserLimitsConfiguration {
     init(appConfiguration: AppConfiguration, isPremium: Bool) {
+        let isPremium = isPremium || RayGramSettings.localPremium
         let keySuffix = isPremium ? "_premium" : "_default"
         var defaultValue = UserLimitsConfiguration.defaultValue
         if isPremium {
+            defaultValue.maxPinnedChatCount = 10
             defaultValue.maxPinnedSavedChatCount = 100
+            defaultValue.maxArchivedPinnedChatCount = 100
+            defaultValue.maxChannelsCount = 1000
+            defaultValue.maxPublicLinksCount = 20
+            defaultValue.maxSavedGifCount = 400
+            defaultValue.maxFavedStickerCount = 10
+            defaultValue.maxFoldersCount = 30
+            defaultValue.maxFolderChatsCount = 200
+            defaultValue.maxCaptionLength = 4096
+            defaultValue.maxUploadFileParts = 8000
+            defaultValue.maxAboutLength = 140
+            defaultValue.maxAnimatedEmojisInText = 100
+            defaultValue.maxReactionsPerMessage = 3
+            defaultValue.maxSharedFolderInviteLinks = 100
+            defaultValue.maxSharedFolderJoin = 100
+            defaultValue.maxStoryCaptionLength = 2048
+            defaultValue.maxExpiringStoriesCount = 100
+            defaultValue.maxStoriesWeeklyCount = 100
+            defaultValue.maxStoriesMonthlyCount = 1000
+            defaultValue.maxStoriesSuggestedReactions = 5
+            defaultValue.maxStoriesLinksCount = 10
+            defaultValue.maxChannelRecommendationsCount = 20
+            defaultValue.maxBotsCreated = 40
         }
         
         func getValue(_ key: String, orElse defaultValue: Int32) -> Int32 {

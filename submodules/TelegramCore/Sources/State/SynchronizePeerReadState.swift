@@ -315,7 +315,7 @@ private func pushPeerReadState(network: Network, postbox: Postbox, stateManager:
             default:
                 switch readState {
                 case let .idBased(maxIncomingReadId, _, _, _, markedUnread):
-                    if RayGramSettings.ghostReadMessages {
+                    if RayGramSettings.isGhostReadMessages(for: peerId) {
                         return .single(readState)
                     }
                     var pushSignal: Signal<Void, NoError> = network.request(Api.functions.messages.readHistory(peer: inputPeer, maxId: maxIncomingReadId))

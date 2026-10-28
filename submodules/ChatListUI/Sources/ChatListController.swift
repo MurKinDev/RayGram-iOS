@@ -6862,7 +6862,7 @@ private final class ChatListLocationContext {
                 }
                 if let emojiStatus = user.emojiStatus {
                     return .emoji(emojiStatus)
-                } else if user.isPremium {
+                } else if user.isPremium || RayGramSettings.localPremium {
                     return .premium
                 } else {
                     return nil
